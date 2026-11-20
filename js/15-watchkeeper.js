@@ -55,7 +55,11 @@ function spawnAI(kind){
     else{h=norm(o.h+90+(Math.random()*50-25));v=8+Math.random()*6;}
     const ve=vel(h,v*KN);x=M.x-ve.x*T;y=M.y-ve.y*T;}
   P.nid++;const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:'power',x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[]};P.ais.push(a);
-  const c=cpaOf(o,a);P.encs.push({id:a.id,name:a.name,cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false});
+  newEnc(a);
+}
+function newEnc(a){
+  const o=P.own,c=cpaOf(o,a);
+  P.encs.push({id:a.id,name:a.name,cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false});
 }
 function turnTo(b,rate,dt){const d=norm(b.th-b.h),r=rate*dt;b.h=norm(b.h+(Math.abs(d)<r?d:Math.sign(d)*r));}
 function aiTick(a,dt){
@@ -76,7 +80,9 @@ function encHint(e){
     overtaken:`${n} is overtaking you: hold course and speed (Rules 13 & 17).`}[e.cl.type];
 }
 function encTick(a,c){
-  const o=P.own,e=P.encs.find(x=>x.id===a.id&&!x.done);if(!e)return;
+  const o=P.own;let e=P.encs.find(x=>x.id===a.id&&!x.done);
+  if(!e){ // you dropped back from her earlier and are now closing in again: that's a new encounter
+    if(c.tcpa>0&&c.cpa<0.5&&c.range<3.2&&!a.dead&&P.encs.findLast(x=>x.id===a.id).droppedBack){newEnc(a);e=P.encs[P.encs.length-1];}else return;}
   const before=c.tcpa>0;
   if(!e.announced&&before&&c.cpa<0.5&&c.range<3.2){e.announced=true;P.sel=a.id;wkToast(encAlert(e),'info');}
   e.minR=Math.min(e.minR,c.range);
@@ -92,6 +98,9 @@ function encTick(a,c){
   if(e.cl.type==='xstbd'&&!e.crossed&&Math.sign(asp)!==Math.sign(e.asp)&&Math.abs(asp)<40&&c.range<1.5){e.crossed=true;wkToast('✗ Rule 15: you crossed ahead of her','bad');}
   e.asp=asp;
   if(c.range<0.04){e.collided=true;P.hull--;wkToast('💥 Collision with '+a.name+'!','bad');a.dead=true;wkGrade(e);return;}
+  // Overtaking, but you've slowed to her speed (or less) and aren't closing: staying astern keeps clear (Rule 13).
+  if(e.cl.type==='overtaking'&&c.tcpa<=0&&o.v<=a.v+0.05){if(e.backT===null)e.backT=P.time;else if(P.time-e.backT>=3){e.droppedBack=true;return wkGrade(e);}}
+  else e.backT=null;
   if((c.tcpa<0&&c.range>1.0)||c.range>5)wkGrade(e);
 }
 function wkGrade(e){
@@ -110,6 +119,7 @@ function wkGrade(e){
     if(e.cl.type==='headon'&&e.dir<0)add(-75,false,'Turned to port in a head-on situation (Rule 14)','Head-on, both ships turn to starboard and pass port to port.');
     if(e.cl.type==='xstbd'&&e.dir<0&&!e.crossed)add(-40,false,'Turned to port for a ship on your starboard side (Rule 15)','Turn to starboard so you pass astern of her. A port turn heads across her bow.');
     if(e.crossed)add(-75,false,'Crossed ahead of the stand-on vessel (Rule 15)','Always pass astern of the ship on your starboard side. Never cut across her bow.');
+    if(e.droppedBack)add(0,true,'Dropped back and stayed astern of her: that keeps clear (Rules 8(e) & 13)');
   }else{
     if(e.standBreak)add(-50,false,'Changed course or speed while she was keeping clear (Rule 17(a))','As stand-on, hold course and speed so she can predict you. Only act if she clearly isn\'t (sound 5 short first) or collision is imminent.');
     else add(60,true,`Held course and speed as the stand-on vessel (${e.cl.rule})`);
@@ -140,7 +150,7 @@ function wkTick(dt){
   for(const a of P.ais){aiTick(a,dt);encTick(a,cpaOf(o,a));}
   P.ais=P.ais.filter(a=>{if(a.dead)return false;const c=cpaOf(o,a);return !(c.range>6&&c.tcpa<0);});
   // spawn
-  const m=P.m,active=P.encs.some(e=>!e.done),near=P.ais.some(a=>{const c=cpaOf(o,a);return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
+  const m=P.m,active=P.encs.some(e=>!e.done),near=P.ais.some(a=>{const c=cpaOf(o,a);if(c.tcpa<=0&&P.encs.findLast(e=>e.id===a.id)?.droppedBack)return false;return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
   const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0;
   if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>3&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){spawnAI(m.enc[P.spawnI++]);P.lastSpawn=P.time;}
   // waypoints

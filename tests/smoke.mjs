@@ -53,6 +53,24 @@ const wk = await page.evaluate(() => {
 });
 ok(wk.over && wk.hull === 3 && wk.bad === 0 && wk.score > 800, `watchkeeper good bot: score ${wk.score}, hull ${wk.hull}, ${wk.encs} encounters, ${wk.bad} with mistakes`);
 
+// 4. Watchkeeper: dropping back astern of a ship you're overtaking keeps clear and doesn't stall the mission.
+const back = await page.evaluate(() => {
+  wkStart(MISSIONS[0]); const seen = new Set();
+  for (let i = 0; i < 20000 && !P.over; i++) {
+    const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
+    if (act.length) { const e = act[0];
+      if (e.cl.type === 'overtaking' && !seen.has(e.id)) { seen.add(e.id); e.drop = 1; }
+      if (e.drop) { o.tv = 4; o.th = P.ais.find(a => a.id === e.id).h; } // slow to her speed and follow in her wake
+      else if (e.cl.role === 'give' && !e.bot) { o.tv = 12; o.th = norm(e.h0 + (e.cl.type === 'overtaking' ? -40 : 50)); e.bot = 1; P.horn.push({ t: P.time, p: e.cl.type === 'overtaking' ? 'SS' : 'S' }); } }
+    else { o.tv = 12; const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    wkTick(0.05);
+  }
+  const d = P.encs.find(e => e.droppedBack);
+  return { over: P.over, hull: P.hull, spawned: P.spawnI, of: P.m.enc.length, dropPts: d ? d.pts : null, again: d ? P.encs.filter(e => e.id === d.id).length : 0 };
+});
+ok(back.over && back.hull === 3 && back.spawned === back.of && back.dropPts > 0 && back.again === 2,
+  `watchkeeper drop-back: mission ends, ${back.spawned}/${back.of} ships spawned, drop-back scored ${back.dropPts}, re-encounter when passing later`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
