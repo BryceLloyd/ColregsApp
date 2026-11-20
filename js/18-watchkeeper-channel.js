@@ -46,18 +46,41 @@ function chanInit(m){
   return{wpS:m.wps.map(w=>chanPos(ch,{x:w[0],y:w[1]}).s),bends:chanBends(ch),marks:chanMarks(ch),inT:0,stbdT:0,wrongT:null,warned:false,aground:0,groundT:-9,pts:0};
 }
 
-// ---- traffic: an outbound ship coming down the channel on her own starboard side (your port side) ----
-function chanSpawn(o){
-  const ch=P.m.chan,me=chanPos(ch,o),s=me.s+2.4,p=chanAt(ch,s,-ch.hw*0.45);
-  P.nid++;const v=7+Math.random()*3,h=norm(p.h+180);
-  const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:'power',x:p.x,y:p.y,h,th:h,h0:h,v,tv:v,trail:[],state:'chan',bh:[],chanS:s};
-  P.ais.push(a);newEnc(a);const e=P.encs[P.encs.length-1];e.cl={type:'chan',role:'chan',rule:'Rule 9(a)'};
+// ---- traffic ----
+// 'chan:out'    an outbound ship coming down on her own starboard side (your port side)
+// 'chan:cross!' a yacht or fishing boat at the channel edge that sets off across your bow (Rule 9(b)-(d)); '?' = half the time,
+//               otherwise she waits for you to pass
+// 'chan:over'   a slow ship ahead on her starboard side, for you to overtake with signals (Rule 9(e))
+function chanShip(p,h,v,extra){P.nid++;const a=Object.assign({id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:'power',x:p.x,y:p.y,h,th:h,h0:h,v,tv:v,trail:[],bh:[]},extra);
+  P.ais.push(a);newEnc(a);return P.encs[P.encs.length-1];}
+function chanSpawn(kind){
+  let rogue=false;if(kind.endsWith('!')){rogue=true;kind=kind.slice(0,-1);}else if(kind.endsWith('?')){rogue=Math.random()<0.5;kind=kind.slice(0,-1);}
+  const ch=P.m.chan,me=chanPos(ch,P.own);
+  if(kind==='chan:out'){const s=me.s+2.4,p=chanAt(ch,s,-ch.hw*0.45),h=norm(p.h+180);
+    chanShip(p,h,7+Math.random()*3,{state:'chan',chanS:s}).cl={type:'chan',role:'chan',rule:'Rule 9(a)'};}
+  else if(kind==='chan:cross'){const type=Math.random()<0.5?'sail':'fishing',side=Math.random()<0.5?1:-1,sc=me.s+2.0;
+    const p=chanAt(ch,sc,side*(ch.hw+0.12)),end=chanAt(ch,sc,-side*(ch.hw+0.3)),h=brg(p,end);
+    const e=chanShip(p,h,0,{type,state:'chancross',mode:'wait',rogue,sc,end,vgo:WK_TYPES[type].v});
+    e.cl={type:'chancross',role:'chan',rule:type==='fishing'?'Rule 9(c)':'Rule 9(b)'};}
+  else if(kind==='chan:over'){const s=me.s+1.5,off=ch.hw*0.5,p=chanAt(ch,s,off);
+    chanShip(p,p.h,4,{state:'chanover',chanS:s,off}).cl={type:'chanover',role:'chan',rule:'Rule 9(e)'};}
 }
-// Channel ships follow their own starboard side of the channel, outbound, then carry on out to sea.
 function chanAiTick(a,dt){
-  const ch=P.m.chan;a.chanS-=a.v*KN*dt;
-  const tg=a.chanS>0.6?chanAt(ch,a.chanS-0.5,-ch.hw*0.45):{x:a.x+Math.sin(a.h*D2R),y:a.y+Math.cos(a.h*D2R)};
-  a.th=brg(a,tg);turnTo(a,12,dt);const ve=pvel(a);a.x+=ve.x*dt;a.y+=ve.y*dt;
+  const ch=P.m.chan,o=P.own,e=P.encs.findLast(x=>x.id===a.id);
+  if(a.state==='chan'){ // outbound on her own starboard side, then on out to sea
+    a.chanS-=a.v*KN*dt;a.th=brg(a,a.chanS>0.6?chanAt(ch,a.chanS-0.5,-ch.hw*0.45):{x:a.x+Math.sin(a.h*D2R),y:a.y+Math.cos(a.h*D2R)});}
+  else if(a.state==='chanover'){ // inbound, slow; once she agrees to be overtaken she moves further over
+    a.chanS+=a.v*KN*dt;a.th=brg(a,chanAt(ch,a.chanS+0.5,a.off));
+    const sig=P.horn.find(h=>(h.p==='LLSS'||h.p==='LLS')&&h.t>=e.t0&&!h.answered);
+    if(sig&&P.time-sig.t>=1.5){sig.answered=true;
+      if(sig.p==='LLSS'){a.off=ch.hw*0.75;e.agreedT=P.time;sound('LSLS');wkToast(`${a.name}: ${patHTML('LSLS')} (agreed: pass on her port side)`,'info');}
+      else{e.doubtT=P.time;sound('SSSSS');wkToast(`${a.name}: ${patHTML('SSSSS')} (in doubt: no room on her starboard side)`,'bad');}}}
+  else if(a.state==='chancross'){ // waits at the edge; a rogue sets off to cross your bow, a good one waits until you've passed
+    if(a.mode==='wait'){const me=chanPos(ch,o),dUs=a.sc-me.s,tUs=dUs/Math.max(o.v*KN,1e-4),tHer=dist(a,chanAt(ch,a.sc,me.off))/(a.vgo*KN);
+      if(a.rogue?dUs>0&&tUs<=tHer+0.5:me.s>a.sc+0.25){a.mode='go';a.tv=a.v=a.vgo;a.th=a.h=brg(a,a.end);e.goT=P.time;}}
+    else if(a.mode==='go'&&dist(a,a.end)<0.05){a.mode='done';a.v=a.tv=0;}
+    if(a.mode!=='go')a.v=0;}
+  turnTo(a,12,dt);const ve=pvel(a);a.x+=ve.x*dt;a.y+=ve.y*dt;
   a.bh.push({t:P.time,b:brg(P.own,a)});while(a.bh.length&&P.time-a.bh[0].t>2.5)a.bh.shift();
 }
 
@@ -71,9 +94,10 @@ function chanTick(dt){
     const back=chanAt(ch,q.s,ch.hw*0.4);o.x=back.x;o.y=back.y;o.h=o.th=norm(back.h);P.refTh=o.th;o.v=0;o.tele=2;o.tv=TELE[2].v;wkUI();
     return;
   }
-  // Rule 9(a): keep to the starboard side
-  if(o.v>1){C.inT+=dt;if(q.off>0)C.stbdT+=dt;}
-  if(q.off<-0.02&&o.v>1){if(C.wrongT===null)C.wrongT=P.time;else if(!C.warned&&P.time-C.wrongT>2){C.warned=true;wkToast('✗ Rule 9(a): keep to the starboard side of the channel','bad');}}
+  // Rule 9(a): keep to the starboard side, except while overtaking with her agreement (Rule 9(e))
+  const passing=P.encs.some(e=>!e.done&&e.cl.type==='chanover'&&e.agreedT!=null);
+  if(o.v>1&&!passing){C.inT+=dt;if(q.off>0)C.stbdT+=dt;}
+  if(q.off<-0.02&&o.v>1&&!passing){if(C.wrongT===null)C.wrongT=P.time;else if(!C.warned&&P.time-C.wrongT>2){C.warned=true;wkToast('✗ Rule 9(a): keep to the starboard side of the channel','bad');}}
   else{C.wrongT=null;C.warned=false;}
   // Rules 9(f) & 34(e): one prolonged blast approaching a blind bend
   for(const b of C.bends){
@@ -86,6 +110,44 @@ function chanTick(dt){
 }
 
 // ---- grading ----
+const chanLabel=e=>TYPE_LABEL[e.vt].toLowerCase();
+function chanRoleLine(e){
+  if(e.cl.type==='chancross')return `In a narrow channel, a ${chanLabel(e)} must not impede a ship that can only navigate inside it (${e.cl.rule} & 9(d)).`;
+  if(e.cl.type==='chanover')return 'Overtaking in a narrow channel takes a signal and her agreement (Rules 9(e) & 34(c)).';
+  return 'In a narrow channel, each ship keeps to her own starboard side (Rule 9(a)).';
+}
+function chanGrade(e,add){
+  if(e.cl.type==='chancross')return chanCrossGrade(e,add);
+  if(e.cl.type==='chanover')return chanOverGrade(e,add);
+  return chanEncGrade(e,add);
+}
+function chanCrossGrade(e,add){
+  if(e.rogue){
+    e.notes.push({ok:null,txt:`${e.name} crossed your bow. A ${chanLabel(e)} must not impede a ship that can only navigate inside the channel (${e.cl.rule} & 9(d)), but you still had to avoid a collision (Rule 8(f)).`,p:0});
+    const doubt=P.horn.find(h=>h.p==='SSSSS'&&h.t>=e.t0&&h.t<=(e.cpaT??e.doneT??P.time));
+    if(doubt)add(20,true,'Sounded five short when she started across (Rules 9(d) & 34(d))');
+    else add(-15,false,'No doubt signal (Rules 9(d) & 34(d))','When a small craft looks set to cross ahead of you in a channel, sound at least five short blasts.');
+    if(e.act?.by==='speed')add(40,true,'Slowed down as she crossed ahead (Rule 8(e))');
+    else if(e.act)add(15,true,'Altered course for her','In a channel there\'s little room to turn: slowing down or stopping is usually safer (Rule 8(e)).');
+    else if(!e.collided)add(-40,false,'Kept going while she crossed your bow','You can\'t turn far in a channel: slow down or stop and let her clear (Rule 8(e)).');
+  }else{
+    e.notes.push({ok:null,txt:`${e.name} waited at the edge until you'd passed, as ${e.cl.rule} requires.`,p:0});
+    if(!e.act)add(40,true,`Held your course on the starboard side while she waited (${e.cl.rule})`);
+    else add(10,true,'Slowed down although she was waiting for you','Harmless, but she was keeping out of your way. Watch whether she actually moves before you act.');
+  }
+  if(!e.collided&&e.minR<0.1)add(-50,false,`Close quarters: passed only ${e.minR.toFixed(2)} nm off`,'Slow down sooner so she clears well ahead of you.');
+}
+function chanOverGrade(e,add){
+  const a=P.ais.find(x=>x.id===e.id),passed=e.cpaT!=null&&(!a||chanPos(P.m.chan,P.own).s>chanPos(P.m.chan,a).s);
+  if(!passed){add(30,true,'Stayed astern of her rather than overtaking (Rule 9(e))');return;}
+  const sig=P.horn.find(h=>(h.p==='LLSS'||h.p==='LLS')&&h.t>=e.t0&&h.t<=e.cpaT);
+  if(!sig)add(-30,false,'Overtook in the channel without signalling (Rules 9(e) & 34(c))','Before overtaking in a narrow channel, sound ▬ ▬ • • ("I intend to overtake you on your port side") or ▬ ▬ • (starboard side), and wait for her ▬ • ▬ •.');
+  else if(sig.p==='LLS')add(-20,false,'Signalled to pass on her starboard side, where there was no room (Rule 34(c))','She was already over to starboard. Signal ▬ ▬ • • to pass on her port side.');
+  else if(e.agreedT!=null&&e.agreedT<=e.cpaT)add(20,true,`Signalled ${patHTML('LLSS')} and waited for her ${patHTML('LSLS')} before passing (Rules 9(e) & 34(c))`);
+  else add(-20,false,'Overtook before she agreed (Rule 9(e))','Wait for her ▬ • ▬ • reply before you pass.');
+  if(!e.collided&&e.minR<0.08)add(-50,false,`Close quarters: passed only ${e.minR.toFixed(2)} nm off`,'Give her more room as you pass.');
+  else if(!e.collided&&e.minR>=0.15)add(25,true,`Passed her safely, ${e.minR.toFixed(2)} nm off`);
+}
 function chanEncGrade(e,add){
   const ch=P.m.chan,side=e.cpaOff??chanPos(ch,P.own).off;
   if(side>0.02)add(60,true,'Kept to the starboard side of the channel as you met her (Rule 9(a))');
