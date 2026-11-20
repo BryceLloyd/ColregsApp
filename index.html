@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>COLREGs Trainer</title>
+<meta name="description" content="Learn the International Regulations for Preventing Collisions at Sea with animated scenarios, quizzes and a free-play bridge simulator.">
+<meta name="theme-color" content="#0e1a2b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="COLREGs">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs><filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>
+
+<!-- HOME -->
+<div class="view" id="home">
+  <div class="hero"><div class="a">⚓</div><h2>COLREGs Trainer</h2><p>Learn the Rules of the Road, then prove it.</p></div>
+  <button class="tile main" id="goChallenge"><span class="e">🏆</span><span><b>Challenge</b><br><small style="color:#cfe2ff">Random scenarios · 7 levels, each harder · 3 lives · leaderboard</small></span></button>
+  <button class="tile main wk" id="goPlay"><span class="e">🧭</span><span><b>Watchkeeper · free play</b><br><small style="color:#c8f0e2">Steer your own ship through traffic. Every move judged on the Rules.</small></span></button>
+  <div class="grid2">
+    <button class="tile" data-sec="rules"><span class="e">🚢</span><b>Rules &amp; scenarios</b><small>Steering &amp; sailing rules + scenarios</small></button>
+    <button class="tile" data-sec="lights"><span class="e">💡📯</span><b>Lights &amp; sounds</b><small>Lights, shapes, sound signals + night &amp; fog scenarios</small></button>
+    <button class="tile" data-sec="buoys"><span class="e">🛟</span><b>Buoyage</b><small>IALA marks + buoyage scenarios</small></button>
+    <button class="tile" data-sec="flags"><span class="e">🚩</span><b>Signal flags</b><small>A–Z code flags + quiz</small></button>
+    <button class="tile" id="homeLb" style="grid-column:span 2"><span class="e">🏆</span><b>Leaderboard</b><small>Who's top of the fleet?</small></button>
+  </div>
+</div>
+
+<!-- WATCHKEEPER -->
+<div class="view" id="play">
+  <header>
+    <button class="ib" id="pHome" aria-label="Home">🏠</button>
+    <h1 id="pTitle">Watchkeeper</h1>
+    <span class="chip">★ <b id="pScore">0</b></span>
+    <span class="chip" id="pHull"></span>
+    <button class="ib" id="pPause" aria-label="Pause">⏸</button>
+  </header>
+  <div class="meta" style="justify-content:space-between;flex:none"><span id="pWp"></span><span id="pTime"></span></div>
+  <div id="pStage"><canvas id="pcv"></canvas><div id="pToast"></div><button id="pRange">3 nm</button><div id="pCard"></div><div id="pResult"></div></div>
+  <div id="pHint" class="calm">Steer for the waypoint. Tap a ship to check her bearing and CPA.</div>
+  <div class="pctl">
+    <div class="pbox"><div class="lb2">Helm (autopilot)</div>
+      <div class="helm"><button class="hp" data-dh="-10" aria-label="Port 10 degrees">↰10°</button><div class="hd"><span id="pHdg">000°</span><small id="pSet">set 000°</small></div><button class="hs" data-dh="10" aria-label="Starboard 10 degrees">10°↱</button></div></div>
+    <div class="pbox"><div class="lb2">Engine · <span id="pSpd">12.0 kn</span></div>
+      <div class="tele" id="pTele"></div></div>
+  </div>
+  <div class="phorn"><span>Horn</span><button data-hp="S">•</button><button data-hp="SS">• •</button><button data-hp="SSS">• • •</button><button data-hp="SSSSS">5×•</button><button data-hp="L">▬</button></div>
+</div>
+
+<!-- Watchkeeper missions -->
+<div class="ov" id="ovPlay"><div class="ovIn">
+  <div class="ovHead"><h2>🧭 Watchkeeper</h2><button class="ib" data-close>✕</button></div>
+  <div class="scroll stack">
+    <div class="note">Steer your own ship through real traffic to each waypoint. A referee judges every encounter against the Rules: <b>early, bold action</b> when you give way, <b>holding course and speed</b> when you stand on, the right <b>sound signals</b>, and a safe passing distance. Time runs 20× faster than real life.</div>
+    <div class="note">⚙️ <b>Helm:</b> tap ↰10° / 10°↱ (hold to keep turning). <b>Engine:</b> astern to full ahead. <b>Horn:</b> • starboard, • • port, • • • astern, 5×• doubt. Tap any ship for her bearing trend and closest point of approach (CPA).</div>
+    <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pHints" checked style="width:22px;height:22px"><span><b>Allow hints</b><br><span class="small">During an encounter you can tap 💡 to see your role and what to do, for −20 points. Off = no hints at all.</span></span></label>
+    <p class="small" style="margin:0">Buoyage region: <b>IALA Region A</b> (standard).</p>
+    <div id="pMissions"></div>
+  </div>
+</div></div>
+
+<!-- Watchkeeper debrief -->
+<div class="ov" id="ovDebrief"><div class="ovIn">
+  <div class="scroll stack">
+    <p class="small center" style="margin:8px 0 0" id="dbHead"></p>
+    <div class="big center" id="dbScore"></div>
+    <div class="center small" id="dbSub"></div>
+    <div id="dbList"></div>
+    <div class="row"><button class="btn" id="dbRetry">Sail again</button><button class="btn sec" id="dbMis">Missions</button></div>
+    <button class="btn sec" id="dbHome">🏠 Home</button>
+  </div>
+</div></div>
+
+<!-- SECTION -->
+<div class="view" id="sec">
+  <header><button class="ib" id="secBack" aria-label="Back">←</button><h1 id="secTitle"></h1></header>
+  <div class="tabs" id="secTabs"></div>
+  <div id="secBody"></div>
+</div>
+
+<!-- GAME -->
+<div class="view" id="app">
+  <header>
+    <button class="ib" id="gHome" aria-label="Home">🏠</button>
+    <h1 id="hMode"></h1>
+    <span class="chip" id="hLives"></span>
+    <span class="chip">✔ <b id="sc">0</b></span>
+    <span class="chip" id="hClock">⏱ <b id="clock">0:00</b></span>
+  </header>
+  <div id="info">
+    <div class="meta"><span id="prog"></span><span id="tags"></span></div>
+    <div id="title"></div>
+    <p id="prompt"></p>
+  </div>
+  <div id="stage">
+    <canvas id="bridge"></canvas>
+    <canvas id="cv"></canvas>
+    <div id="status"></div>
+    <button id="replay" aria-label="Replay">↺</button>
+  </div>
+  <div id="dock">
+    <div class="choices" id="choices">
+      <button class="choice port" data-k="port"><span class="ico">↰</span><span>Alter to PORT</span></button>
+      <button class="choice stbd" data-k="stbd"><span>Alter to STARBOARD</span><span class="ico">↱</span></button>
+      <button class="choice" data-k="slow"><span class="ico">⏬</span><span>Slow down / stop</span></button>
+      <button class="choice" data-k="stand"><span class="ico">⬆</span><span>Stand on<small>hold course &amp; speed</small></span></button>
+    </div>
+    <div id="fb">
+      <div id="fbHead"><span id="fbH"></span><span id="fbRule"></span></div>
+      <div id="fbText"></div>
+      <button class="btn" id="next">Next ➜</button>
+    </div>
+  </div>
+  <div id="mcq"></div>
+</div>
+
+<!-- Challenge start -->
+<div class="ov" id="ovStart"><div class="ovIn">
+  <div class="ovHead"><h2>🏆 Challenge</h2><button class="ib" data-close>✕</button></div>
+  <div class="scroll stack">
+    <div class="note">Random situations at sea across <b>7 levels</b>, each harder than the last: basics → who gives way → buoyage → signal flags → night lights → special vessels &amp; channels → fog &amp; tough calls. Each level mixes animated scenarios with multiple-choice questions. You have <b>3 lives</b>. Most correct answers wins; fastest time breaks ties.</div>
+    <label class="small" for="nick">Your name on the leaderboard</label>
+    <input id="nick" maxlength="20" placeholder="e.g. Bryce" autocomplete="off">
+    <button class="btn" id="startBtn">Start ⚓</button>
+    <p class="small center">Your vessel is <b style="color:#5aa2ff">blue</b> and starts heading up the screen.</p>
+  </div>
+</div></div>
+
+<!-- Level intro -->
+<div class="ov" id="ovLevel"><div class="ovIn" style="justify-content:center;text-align:center;gap:10px">
+  <div class="small">LEVEL</div>
+  <div class="lvlBig" id="lvNum"></div>
+  <h2 id="lvName" style="margin:0"></h2>
+  <p id="lvDesc" class="small" style="margin:0 10px"></p>
+  <div class="hearts" id="lvLives"></div>
+  <button class="btn" id="lvGo" style="max-width:320px;margin:10px auto 0">Go ⚓</button>
+</div></div>
+
+<!-- Challenge end -->
+<div class="ov" id="ovEnd"><div class="ovIn">
+  <div class="scroll stack">
+    <p class="small center" style="margin:8px 0 0" id="endHead">Challenge over</p>
+    <div class="big center" id="endScore"></div>
+    <div class="center small" id="endSub"></div>
+    <div class="center" id="endMsg"></div>
+    <div class="note" id="saveNote">Posting your score…</div>
+    <button class="btn" id="shareBtn">📣 Challenge a friend</button>
+    <textarea id="copyBox" readonly></textarea>
+    <div class="small" id="missed"></div>
+    <h3 style="margin:6px 0 0;font-size:15px">🏆 Leaderboard</h3>
+    <div id="endBoard"></div>
+    <div class="row"><button class="btn" id="again">Play again</button><button class="btn sec" id="endHome">🏠 Home</button></div>
+  </div>
+</div></div>
+
+<!-- Practice end -->
+<div class="ov" id="ovDone"><div class="ovIn" style="justify-content:center;text-align:center;gap:10px">
+  <div class="small">Practice complete</div>
+  <div class="big" id="doneScore"></div>
+  <div id="doneMsg" class="small"></div>
+  <div class="row" style="max-width:360px;width:100%;margin:10px auto 0"><button class="btn" id="doneAgain">Again</button><button class="btn sec" id="doneBack">Back</button></div>
+</div></div>
+
+<!-- Leaderboard -->
+<div class="ov" id="ovLb"><div class="ovIn">
+  <div class="ovHead"><h2>🏆 Leaderboard</h2><button class="ib" data-close>✕</button></div>
+  <div class="scroll">
+    <div id="lbBoard"></div>
+
+  </div>
+</div></div>
+
+<template id="rulesTpl">
+    <p class="small">Plain-English summary of the key steering &amp; sailing rules (COLREGs 1972, as amended). A study aid — always check the official text.</p>
+    <h3>Rule 5–7 · Lookout, speed, risk</h3>
+    <ul><li>Keep a proper lookout by sight, hearing and all available means (radar, AIS).</li>
+    <li>Always go at a safe speed — one that lets you stop in time for the conditions.</li>
+    <li><b>Risk of collision exists if the compass bearing doesn't change appreciably while range decreases.</b> If in doubt, assume risk exists.</li></ul>
+    <h3>Rule 8 · Action to avoid collision</h3>
+    <p>Take action <b>early, substantial and obvious</b> — a big course change (think 60°+) or a clear speed reduction the other ship can see. Lots of small alterations are bad practice.</p>
+    <h3>Rule 9 · Narrow channels</h3>
+    <p>Keep as near to the <b>starboard side</b> of the channel as is safe. Small and sailing craft must not impede ships that can only navigate inside the channel.</p>
+    <h3>Rule 12 · Two sailing vessels</h3>
+    <ul><li>Different tacks: the vessel on <b>port tack</b> (wind on her port side) keeps clear.</li>
+    <li>Same tack: the <b>windward</b> vessel keeps clear.</li>
+    <li>Not sure which tack the other is on while you're on port tack? Keep clear.</li></ul>
+    <h3>Rule 10 · Traffic separation schemes</h3>
+    <svg viewBox="0 0 320 170" style="width:100%;max-width:420px;display:block;margin:6px 0;border-radius:8px" role="img" aria-label="Traffic separation scheme diagram">
+      <rect width="320" height="170" fill="#1d6fa5"/>
+      <rect x="0" y="70" width="320" height="22" fill="rgba(214,51,132,.35)"/>
+      <line x1="0" y1="70" x2="320" y2="70" stroke="#d63384" stroke-width="1.5"/><line x1="0" y1="92" x2="320" y2="92" stroke="#d63384" stroke-width="1.5"/>
+      <line x1="0" y1="30" x2="320" y2="30" stroke="#d63384" stroke-width="1.5" stroke-dasharray="8 6"/><line x1="0" y1="132" x2="320" y2="132" stroke="#d63384" stroke-width="1.5" stroke-dasharray="8 6"/>
+      <g fill="#ff9ed2" stroke="#ff9ed2" stroke-width="3"><line x1="40" y1="50" x2="20" y2="50"/><polygon points="12,50 22,44 22,56"/><line x1="200" y1="50" x2="180" y2="50"/><polygon points="172,50 182,44 182,56"/>
+      <line x1="90" y1="112" x2="110" y2="112"/><polygon points="118,112 108,106 108,118"/><line x1="250" y1="112" x2="270" y2="112"/><polygon points="278,112 268,106 268,118"/></g>
+      <g stroke="#fff" stroke-width="2.5" fill="#fff"><line x1="140" y1="160" x2="140" y2="16"/><polygon points="140,8 134,20 146,20"/></g>
+      <text x="148" y="24" font-size="11" fill="#fff">Cross at right angles ✓</text>
+      <g stroke="#7dffb0" stroke-width="2.5" fill="#7dffb0"><path d="M300 160 Q 290 135 240 120" fill="none"/><polygon points="232,118 244,114 242,126"/></g>
+      <text x="176" y="162" font-size="11" fill="#7dffb0">Join at a small angle ✓</text>
+      <text x="6" y="84" font-size="10" fill="#fff">Separation zone — keep out</text>
+      <text x="230" y="44" font-size="10" fill="#fff">Lane</text><text x="20" y="126" font-size="10" fill="#fff">Lane</text>
+    </svg>
+    <ul><li>Proceed in the correct lane, in the general direction of its flow, and keep clear of the separation zone.</li>
+    <li>Join or leave at the end of a lane, or at as <b>small an angle</b> as possible.</li>
+    <li>Avoid crossing. If you must, cross with your <b>heading at right angles</b> to the traffic flow.</li>
+    <li>Vessels under 20 m, sailing vessels and fishing vessels must <b>not impede</b> power-driven vessels following a lane.</li>
+    <li>A TSS gives <b>no right of way</b>: the other steering rules still apply. Avoid anchoring in or near one.</li></ul>
+    <h3>Rule 13 · Overtaking</h3>
+    <p>Any vessel overtaking keeps clear — this beats every other rule. You're overtaking if you're coming up from more than 22.5° abaft her beam (at night you'd only see her <b>sternlight</b>). You may pass either side.</p>
+    <h3>Rule 14 · Head-on</h3>
+    <p>Two power-driven vessels meeting nearly head-on (you see both her sidelights / masts in line): <b>both alter to starboard</b> and pass port-to-port.</p>
+    <p class="rhyme">"When both lights you see ahead, starboard wheel and show your red."</p>
+    <h3>Rule 15 · Crossing</h3>
+    <p>Two power-driven vessels crossing: the one with the other <b>on her starboard side</b> gives way, and should avoid crossing ahead.</p>
+    <p class="rhyme">"If to your starboard red appear, it is your duty to keep clear."</p>
+    <h3>Rule 16 · Give-way vessel</h3><p>Take early and substantial action to keep <b>well</b> clear.</p>
+    <h3>Rule 17 · Stand-on vessel</h3>
+    <ul><li>(a) Keep your course and speed.</li><li>(a)(ii) You <i>may</i> act once it's clear the give-way vessel isn't acting.</li>
+    <li>(b) When collision can't be avoided by her action alone, you <b>must</b> take the best action.</li>
+    <li>(c) A power vessel in that situation should, if possible, <b>not alter to port</b> for a vessel on her own port side.</li></ul>
+    <p class="rhyme">"Green to green, or red to red — perfect safety, go ahead."</p>
+    <h3>Rule 18 · Pecking order</h3>
+    <p>Except in narrow channels / TSS and when overtaking, a vessel keeps out of the way of those <b>below</b> it:</p>
+    <ol style="padding-left:18px"><li>Not Under Command (NUC)</li><li>Restricted in Ability to Manoeuvre (RAM)</li><li>Constrained by Draught (CBD — avoid impeding)</li><li>Fishing (with gear out)</li><li>Sailing</li><li>Power-driven</li></ol>
+    <p class="small">Memory aid: "NUC RAM CBD Fishing Sail Power" — the less able to manoeuvre, the more others keep clear.</p>
+    <h3>Rule 19 · Restricted visibility</h3>
+    <ul><li>Crossing / head-on rules don't apply when you can't see each other.</li>
+    <li>Radar target forward of the beam (not being overtaken): <b>avoid altering to port</b>.</li>
+    <li>Hear a fog signal apparently <b>forward of your beam</b>: reduce speed to the minimum to keep steerage, take all way off if needed, and navigate with extreme caution.</li></ul>
+    <h3>Lights, shapes &amp; sound signals</h3>
+    <p>These live in their own section: <b>💡 Lights &amp; sounds</b> on the home screen, with its own night and fog scenarios.</p>
+  </template>
+<script src="js/config.js"></script>
+<script src="js/00-core.js"></script>
+<script src="js/01-scenarios.js"></script>
+<script src="js/02-levels-and-rules-questions.js"></script>
+<script src="js/03-reference-data.js"></script>
+<script src="js/04-svg-renderers.js"></script>
+<script src="js/05-audio.js"></script>
+<script src="js/06-buoyage.js"></script>
+<script src="js/07-views-and-sections.js"></script>
+<script src="js/08-question-formats.js"></script>
+<script src="js/09-variants.js"></script>
+<script src="js/10-quiz.js"></script>
+<script src="js/11-sim-engine.js"></script>
+<script src="js/12-sim-draw.js"></script>
+<script src="js/13-sim-flow.js"></script>
+<script src="js/14-leaderboard.js"></script>
+<script src="js/15-watchkeeper.js"></script>
+<script src="js/16-watchkeeper-draw.js"></script>
+<script src="js/17-watchkeeper-controls.js"></script>
+<script src="js/99-boot.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+// Challenge LEVELS, rules multiple-choice bank (RULEQ), light facts (LIGHTQ).
+const LEVELS=[
+ {name:"The basics",desc:"Head-on, crossing and overtaking between power vessels, in daylight.",pool:[0,1,2,3,4],sims:4,mcq:[["rules",2,"basic"]]},
+ {name:"Who gives way?",desc:"Sailing rules, tacks, and the pecking order of Rule 18.",pool:[5,6,7,17,18,19,20,21],sims:4,mcq:[["rules",2,"give"]]},
+ {name:"Buoyage",desc:"Read the marks and pass on the safe side. Region A unless the scenario says otherwise.",pool:[31,32,33,34,35,36,37,38,39,40,41,42],sims:4,mcq:[["buoys",2]]},
+ {name:"Signal flags",desc:"International code flags: what they mean, and which is which.",pool:[],sims:0,mcq:[["flags",6]]},
+ {name:"Night lights",desc:"Read the lights from your bridge and work out what she's doing.",pool:[8,9,10,11,24,25,27],sims:4,mcq:[["lights",2]]},
+ {name:"Special vessels, channels & TSS",desc:"Trawlers, NUC, RAM, deep-draught ships, narrow channels and traffic separation schemes.",pool:[12,13,22,23,26,14,43,44,45,46],sims:4,mcq:[["lights",1],["rules",1,"tss"]]},
+ {name:"Fog & tough calls",desc:"Restricted visibility, radar, and the stand-on vessel's last resort.",pool:[15,28,29,16,30],sims:4,mcq:[["rules",1,"fog"],["sounds",1,"fog"]]}
+];
+const MAX_LIVES=3, TOTAL=LEVELS.reduce((a,L)=>a+L.sims+L.mcq.reduce((b,m)=>b+m[1],0),0);
+const RULEQ=[
+ {g:'basic',q:"Two power-driven vessels meet nearly head-on. What should each do?",a:"Alter course to starboard",w:["Alter course to port","The smaller one gives way","Both stop and wait"],e:"Rule 14: both alter to starboard and pass port to port."},
+ {g:'basic',q:"Two power-driven vessels are crossing. Which one gives way?",a:"The one with the other on her own starboard side",w:["The one with the other on her port side","The larger vessel","The faster vessel"],e:"Rule 15: if she's on your starboard side, you keep clear."},
+ {g:'basic',q:"When are you legally 'overtaking'?",a:"Coming up from more than 22.5° abaft her beam",w:["Whenever you're faster than her","Only when right astern of her","Any time she's ahead of you"],e:"Rule 13: from more than 22.5° abaft the beam (at night, you'd see only her sternlight)."},
+ {g:'basic',q:"What must the stand-on vessel do at first?",a:"Keep her course and speed",w:["Slow down to let the other pass","Alter to starboard early","Alter to port to open the distance"],e:"Rule 17(a): hold course and speed so the give-way vessel can predict you."},
+ {g:'basic',q:"How can you tell risk of collision exists?",a:"Compass bearing steady and range closing",w:["Bearing changing quickly","Range opening","She is bigger than you"],e:"Rule 7: a steady bearing with decreasing range means risk of collision."},
+ {g:'basic',q:"Action to avoid collision should be…",a:"Early, substantial and readily apparent",w:["Small and gradual so as not to alarm","Left to the last moment","A series of small alterations"],e:"Rule 8: make it big and early so the other vessel sees it on radar or by eye."},
+ {g:'basic',q:"Who must keep a proper lookout?",a:"Every vessel, at all times",w:["Only power-driven vessels","Only at night or in fog","Only the give-way vessel"],e:"Rule 5: every vessel, by sight and hearing and all available means."},
+ {g:'basic',q:"What decides a 'safe speed'?",a:"Visibility, traffic, manoeuvrability and conditions",w:["The harbour speed limit only","Your engine's cruising speed","Time of day only"],e:"Rule 6: a speed at which you can act properly and stop within a suitable distance."},
+ {g:'give',q:"Which vessel must a power-driven vessel keep clear of?",a:"A sailing vessel",w:["A power vessel on her port bow","A vessel that is overtaking her","Any smaller power vessel"],e:"Rule 18: power keeps clear of NUC, RAM, fishing and sailing vessels."},
+ {g:'give',q:"Two sailing vessels on different tacks. Who keeps clear?",a:"The one on port tack",w:["The one on starboard tack","The windward one, always","The larger yacht"],e:"Rule 12(a)(i): port tack gives way to starboard tack."},
+ {g:'give',q:"Two sailing vessels on the same tack. Who keeps clear?",a:"The windward vessel",w:["The leeward vessel","The one on the right","The faster one"],e:"Rule 12(a)(ii): on the same tack, windward keeps clear of leeward."},
+ {g:'give',q:"Which vessel ranks highest in Rule 18, so others keep clear of her?",a:"Not under command",w:["Fishing vessel","Sailing vessel","Power-driven vessel"],e:"Order: NUC, RAM, CBD, fishing, sail, power."},
+ {g:'give',q:"A sailing yacht overtaking a slow motor vessel must…",a:"Keep clear — the overtaking rule applies",w:["Stand on — sail has priority","Sound one prolonged blast","Pass only on her port side"],e:"Rule 13 overrides Rule 18: any overtaking vessel keeps clear."},
+ {g:'give',q:"A yacht under sail AND engine is treated as…",a:"A power-driven vessel",w:["A sailing vessel","Restricted in ability to manoeuvre","A fishing vessel"],e:"Any vessel using machinery is power-driven. By day she shows a cone, point down."},
+ {g:'give',q:"In a narrow channel you should keep…",a:"As near the starboard side as is safe",w:["In the middle, in the deepest water","To the port side","Wherever there's least traffic"],e:"Rule 9: keep to the starboard side of the channel or fairway."},
+ {g:'give',q:"A small sailing boat in a narrow channel must not…",a:"Impede a ship that can only navigate inside the channel",w:["Use her engine","Tack at all","Overtake any vessel"],e:"Rule 9(b): vessels under 20 m and sailing vessels must not impede them."},
+ {g:'fog',q:"In fog, radar shows a target forward of the beam (not overtaking). You should avoid…",a:"An alteration of course to port",w:["An alteration to starboard","Reducing speed","Sounding fog signals"],e:"Rule 19(d)(i): avoid turning to port for a vessel forward of the beam."},
+ {g:'fog',q:"You hear a fog signal apparently forward of your beam. You should…",a:"Reduce to the minimum speed to keep steerage",w:["Alter boldly to port","Keep your speed to get past quickly","Sound five short blasts"],e:"Rule 19(e): slow to bare steerage way, or stop, and proceed with extreme caution."},
+ {g:'fog',q:"In restricted visibility, is there a stand-on vessel?",a:"No — every vessel must take avoiding action",w:["Yes, exactly as in clear weather","Only the crossing rule applies","Only the larger vessel must act"],e:"Rule 19 applies to vessels not in sight of one another: no stand-on vessel."},
+ {g:'fog',q:"A power-driven stand-on vessel forced to act at the last moment should, if possible, NOT…",a:"Alter to port for a vessel on her own port side",w:["Alter to starboard","Stop her engines","Sound five short blasts"],e:"Rule 17(c): she may turn to starboard at the same moment and you'd turn into each other."},
+ {g:'fog',q:"A radar target is abaft your beam and closing. You should avoid…",a:"Altering course towards her",w:["Altering course away from her","Keeping a radar watch","Sounding fog signals"],e:"Rule 19(d)(ii): avoid an alteration towards a vessel abeam or abaft the beam."}
+];
+RULEQ.push(
+ {g:'tss',q:"When joining or leaving a traffic lane, you should normally do so…",a:"At the end of the lane, or at as small an angle to the traffic flow as possible",w:["At right angles to the traffic flow","Through the separation zone","Wherever is quickest, at full speed"],e:"Rule 10(b)(iii): join or leave at the termination of the lane, or at as small an angle as practicable."},
+ {g:'tss',q:"If you have to cross a traffic lane, your heading should be…",a:"As nearly as practicable at right angles to the traffic flow",w:["Parallel to the traffic flow","At 45° to the traffic flow","Whatever gives the shortest distance over the ground"],e:"Rule 10(c): it's your heading that must be at right angles, so other ships can see you're crossing."},
+ {g:'tss',q:"In a TSS, a sailing vessel or a vessel under 20 m must…",a:"Not impede a power-driven vessel following a traffic lane",w:["Stand on — sail has right of way","Stay in the separation zone","Show a special light"],e:"Rule 10(j). Fishing vessels have the same duty under Rule 10(i)."},
+ {g:'tss',q:"Does being in a traffic lane give you right of way over a vessel crossing the scheme?",a:"No — the normal steering rules still apply",w:["Yes, always","Only at night","Only for ships over 50 m"],e:"Rule 10(a): a TSS doesn't relieve any vessel of her obligations under the other rules."},
+ {g:'tss',q:"When may you enter a separation zone?",a:"Only when crossing, joining or leaving, in an emergency, or to fish in it",w:["Whenever the lane is busy","To overtake slower ships","To anchor for a rest"],e:"Rule 10(e): keep out of separation zones except in those cases."},
+ {g:'tss',q:"Who should normally NOT use an inshore traffic zone?",a:"Through traffic that can safely use the adjacent lane",w:["Vessels under 20 m","Sailing vessels","Fishing vessels"],e:"Rule 10(d): small craft, sailing and fishing vessels may use it, as may vessels going to or from a port or place within it."},
+ {g:'tss',q:"Should you anchor in a traffic separation scheme?",a:"No — avoid anchoring in a TSS or near its ends",w:["Yes, in the separation zone","Yes, at the edge of a lane","Only at night"],e:"Rule 10(g): avoid anchoring in a TSS or in areas near its terminations."}
+);
+const LIGHTQ=[
+ {q:"Through what arc does a masthead light shine?",a:"225° (ahead to 22.5° abaft each beam)",w:["360°","112.5°","135°"],e:"Masthead light: 225°, the same total arc as the two sidelights."},
+ {q:"What arc does each sidelight cover?",a:"112.5°",w:["90°","135°","225°"],e:"From dead ahead to 22.5° abaft the beam on its side."},
+ {q:"What arc does the sternlight cover?",a:"135°",w:["112.5°","180°","225°"],e:"67.5° each side of dead astern. Together the lights cover the full 360°."},
+ {q:"A sailing vessel underway (sails only) must NOT show…",a:"A masthead light",w:["Sidelights","A sternlight","Red over green at her masthead"],e:"A masthead light means power-driven. Red over green is an optional sailing light."},
+ {q:"You see a white light with red AND green below it, dead ahead. She is…",a:"A power vessel heading straight for you",w:["A sailing vessel heading away","A vessel at anchor","A power vessel crossing left to right"],e:"Masthead + both sidelights = she's pointing at you. Head-on: both alter to starboard."},
+ {q:"A vessel 50 m or more underway shows two masthead lights. Which is higher?",a:"The aft one",w:["The forward one","They're at the same height","Whichever is brighter"],e:"The aft masthead light is higher. Their spread tells you her heading."},
+ {q:"What colour is a towing light?",a:"Yellow",w:["White","Red","Blue"],e:"A yellow towing light is shown above the sternlight."}
+];
+const QCAT={rules:'Rules',buoys:'Buoyage',flags:'Signal flags',lights:'Lights & shapes',sounds:'Sound signals'};
+const tq=(x)=>({vis:'',prompt:x.q,opts:shuffle([x.a,...x.w]).map(s=>({h:esc(s),ok:s===x.a})),explain:x.e});
