@@ -10,9 +10,11 @@ const MISSIONS=[
  {id:'m3',name:'Harbour channel',desc:'A buoyed channel, IALA Region A.'},
  {id:'m4',name:'Night passage',desc:'Lights only.'},
  {id:'m5',name:'Fog',desc:'Radar and sound signals only.'},
- {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules.'},
+ {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules. Stand on, sound five short when in doubt, and act when you must (Rules 17 & 34(d)).',wps:[[0.5,5],[-2.5,9],[0,13.5],[-1.5,18],[1.5,21.5]],
+  enc:['xport','xport!','xstbd','overtaken?','xport?','headon','overtaken!','xport?'],par:510,ready:true},
  {id:'m7',name:'Endless',desc:'Survive as the traffic builds.'}];
 const HORN_WIN=8; // a manoeuvring signal counts if it's sounded within this many real seconds of the manoeuvre (Rule 34(a))
+const ROGUE_AFTER=3; // real seconds after a compliant ship would have acted: by then it's clear she isn't (Rule 17(a)(ii))
 const ENC_LABEL={headon:'Head-on',xstbd:'Crossing from starboard',xport:'Crossing from port',overtaking:'You overtaking',overtaken:'Being overtaken'};
 // Rule 18 traffic. rank: who keeps out of whose way (higher = more privileged); v: typical speed (kn).
 const WK_TYPES={power:{rank:0,v:null},sail:{rank:1,v:6,rule:'Rule 18(a)(iv)',look:'Under sail'},fishing:{rank:2,v:4,rule:'Rule 18(a)(iii)',look:'Shapes: two cones, points together'},
@@ -56,27 +58,28 @@ function wkToast(txt,cls){if(!P)return;P.toasts.push({txt,cls,t:P.time});if(P.to
 function renderToasts(){$('pToast').innerHTML=P.toasts.map(x=>`<div class="ptoast ${x.cls}">${esc(x.txt)}</div>`).join('');}
 const GROUP_T=[20,28]; // ships spawned together reach your track at different times
 function spawnAI(kind,T=20){
+  let rogue=false;if(kind.endsWith('!')){rogue=true;kind=kind.slice(0,-1);}else if(kind.endsWith('?')){rogue=Math.random()<0.5;kind=kind.slice(0,-1);}
   let [geo,ty]=kind.split(':');ty=ty==='r18'?R18_POOL[Math.floor(Math.random()*R18_POOL.length)]:ty||'power';kind=geo;
   const o=P.own,sp=Math.max(o.v,6)*KN,M={x:o.x+Math.sin(o.h*D2R)*sp*T,y:o.y+Math.cos(o.h*D2R)*sp*T};
   let h,v,x,y;const lat=(d)=>({x:Math.cos(o.h*D2R)*d,y:-Math.sin(o.h*D2R)*d});
   if(kind==='overtaking'){h=o.h;v=4;const l=lat(0.04);x=o.x+Math.sin(o.h*D2R)*1.4+l.x;y=o.y+Math.cos(o.h*D2R)*1.4+l.y;}
-  else if(kind==='overtaken'){h=o.h;v=Math.max(o.v,6)+9;const l=lat(-0.05);x=o.x-Math.sin(o.h*D2R)*1.6+l.x;y=o.y-Math.cos(o.h*D2R)*1.6+l.y;}
+  else if(kind==='overtaken'){h=o.h;v=Math.max(o.v,6)+9;const l=lat(rogue?0:-0.05);x=o.x-Math.sin(o.h*D2R)*1.6+l.x;y=o.y-Math.cos(o.h*D2R)*1.6+l.y;}
   else{if(kind==='headon'){h=norm(o.h+180+(Math.random()*6-3));v=9+Math.random()*4;}
     else if(kind==='xstbd'){h=norm(o.h-90+(Math.random()*50-25));v=8+Math.random()*6;}
     else{h=norm(o.h+90+(Math.random()*50-25));v=8+Math.random()*6;}
     if(WK_TYPES[ty].v)v=WK_TYPES[ty].v;
     const ve=vel(h,v*KN);x=M.x-ve.x*T;y=M.y-ve.y*T;}
-  P.nid++;const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:ty,x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[]};P.ais.push(a);
+  P.nid++;const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:ty,x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[],rogue};P.ais.push(a);
   newEnc(a);
 }
 function newEnc(a){
   const o=P.own,c=cpaOf(o,a);
-  P.encs.push({id:a.id,name:a.name,vt:wkType(a),cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false,t0:P.time,asternT:null});
+  P.encs.push({id:a.id,name:a.name,vt:wkType(a),cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false,t0:P.time,asternT:null,rogue:!!a.rogue,dueT:null,cpaT:null});
 }
 function turnTo(b,rate,dt){const d=norm(b.th-b.h),r=rate*dt;b.h=norm(b.h+(Math.abs(d)<r?d:Math.sign(d)*r));}
 function aiTick(a,dt){
   const c=cpaOf(a,P.own),cl=classify(a,P.own),risk=c.cpa<0.35&&c.tcpa>0&&c.range<3.5;
-  if(a.state==='cruise'&&risk&&c.range<2.2){
+  if(a.state==='cruise'&&risk&&c.range<2.2&&!a.rogue){
     if(cl.role==='give'){if(cl.type==='overtaking'){const rb=norm(brg(a,P.own)-a.h);a.th=norm(a.h0+(rb>0?-25:25));}else a.th=norm(a.h0+(cl.type==='headon'?30:45));a.state='avoid';}
     else a.state='stand';}
   if(a.state==='stand'&&c.cpa<0.08&&c.range<0.35&&c.tcpa>0&&a.type!=='nuc'&&a.type!=='ram'){a.th=norm(a.h0+60);a.state='avoid';}
@@ -89,8 +92,8 @@ function encHint(e){
   const n=e.name;
   if(e.cl.r18)return `${n} is a ${TYPE_LABEL[e.vt].toLowerCase()}: a power-driven vessel keeps out of her way (${e.cl.rule}), whatever the crossing or head-on rules say. Act early and boldly.`;
   return {headon:`Head-on with ${n}: both turn to STARBOARD (Rule 14).`,xstbd:`${n} is crossing from starboard: you give way (Rule 15). Act early and boldly.`,
-    xport:`${n} is crossing from port: you stand on. Hold course and speed (Rule 17).`,overtaking:`You're overtaking ${n}: keep well clear, either side (Rule 13).`,
-    overtaken:`${n} is overtaking you: hold course and speed (Rules 13 & 17).`}[e.cl.type];
+    xport:`${n} is crossing from port: you stand on. Hold course and speed (Rule 17). If she clearly isn't keeping clear, sound five short (Rule 34(d)) and act: not to port for a ship on your port side.`,overtaking:`You're overtaking ${n}: keep well clear, either side (Rule 13).`,
+    overtaken:`${n} is overtaking you: hold course and speed (Rules 13 & 17). If she clearly isn't keeping clear, sound five short (Rule 34(d)) and act.`}[e.cl.type];
 }
 function encTick(a,c){
   const o=P.own;let e=P.encs.find(x=>x.id===a.id&&!x.done);
@@ -105,11 +108,14 @@ function encTick(a,c){
       if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)wkToast('✗ Rule 14: head-on, turn to STARBOARD','bad');
       if(e.cl.type==='xstbd'&&e.dir<0)wkToast('✗ Rule 15: turn to starboard and pass astern of her','bad');}
     if(o.tv<0&&e.asternT===null)e.asternT=P.time;
-    if(!e.act&&(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)))e.act={range:c.range,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};
-    if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&!e.excused&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){
+    if(e.cl.role==='stand'&&e.dueT===null&&c.cpa<0.35&&c.range<2.2)e.dueT=P.time; // when a compliant give-way ship acts
+    const apparent=e.rogue&&e.dueT!==null&&P.time-e.dueT>=ROGUE_AFTER;
+    if(!e.act&&(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)))e.act={t:P.time,range:c.range,apparent,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};
+    if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&!e.excused&&!apparent&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){
       const g=P.encs.find(x=>x!==e&&x.announced&&x.cl.role==='give'&&(!x.done||x.doneT>=e.t0)); // a give-way encounter overlapping this one
       if(g)e.excused=g.name;else{e.standBreak=true;wkToast('✗ Rule 17(a): you are stand-on — hold course and speed','bad');}}
   }
+  if(!before&&e.cpaT===null)e.cpaT=P.time;
   const asp=norm(brg(a,o)-a.h);
   if(e.cl.type==='xstbd'&&!e.crossed&&Math.sign(asp)!==Math.sign(e.asp)&&Math.abs(asp)<40&&c.range<1.5){e.crossed=true;wkToast('✗ Rule 15: you crossed ahead of her','bad');}
   e.asp=asp;
@@ -140,6 +146,7 @@ function wkGrade(e){
     if(e.droppedBack)add(0,true,'Dropped back and stayed astern of her: that keeps clear (Rules 8(e) & 13)');
   }else{
     if(e.standBreak)add(-50,false,'Changed course or speed while she was keeping clear (Rule 17(a))','As stand-on, hold course and speed so she can predict you. Only act if she clearly isn\'t (sound 5 short first) or collision is imminent.');
+    else if(e.rogue&&!e.excused)rogueGrade(e,add);
     else if(e.excused)add(40,true,`Altered for ${e.excused}, which you had to keep clear of. With two ships, keeping clear of one comes before standing on for the other (Rule 2(b))`);
     else add(60,true,`Held course and speed as the stand-on vessel (${e.cl.rule})`);
   }
@@ -147,6 +154,19 @@ function wkGrade(e){
     else if(e.minR>=0.4)add(25,true,`Safe passing distance (${e.minR.toFixed(2)} nm)`);}
   hornGrade(e,add);
   e.pts=pts;P.score+=pts;showResult(e);
+}
+// A rogue give-way ship that holds on: stand on until it's clear she isn't acting, sound five short, then act (Rules 17 & 34(d)).
+function rogueGrade(e,add){
+  const her=e.cl.type==='overtaken'?'Rule 13':'Rule 15';
+  e.notes.push({ok:null,txt:`${e.name} ignored the rules: she should have kept out of your way (${her}) but held her course and speed.`,p:0});
+  const doubt=P.horn.find(h=>h.p==='SSSSS'&&h.t>=e.t0&&h.t<=(e.cpaT??e.doneT??P.time));
+  if(doubt)add(20,true,`Sounded five short blasts when in doubt about her intentions (Rule 34(d))`);
+  else add(-15,false,'No doubt signal (Rule 34(d))','When you can\'t tell whether she\'s keeping clear, sound at least five short, rapid blasts.');
+  if(!e.act)add(-60,false,'Stood on into danger: she wasn\'t keeping clear and you didn\'t act (Rule 17(b))','Once it\'s clear she isn\'t giving way, you may act (Rule 17(a)(ii)). When she can\'t avoid a collision alone, you must (Rule 17(b)).');
+  else if(e.act.range>=0.5)add(60,true,`Stood on, then acted at ${e.act.range.toFixed(2)} nm once it was clear she wasn't giving way (Rule 17(a)(ii))`);
+  else add(30,true,`Acted late, at ${e.act.range.toFixed(2)} nm, when collision was close (Rule 17(b))`,'Once you\'ve sounded five short and she still holds on, act. Don\'t wait for the last moment.');
+  if(e.cl.type==='xport'&&e.dir<0)add(-40,false,'Turned to port for a ship on your port side (Rule 17(c))','Acting as stand-on in a crossing, turn to starboard or slow down. A port turn heads towards her.');
+  if(e.cl.type==='xport'&&(e.collided||e.minR<0.4))e.notes.push({ok:null,txt:'With a rogue ship crossing from port: stop and let her pass ahead, or turn boldly (90°) to starboard at full speed. Slowing while you turn to starboard lets her catch you.',p:0});
 }
 // Rule 34(a): manoeuvring signals while in sight. • = altering to starboard, • • = altering to port, • • • = operating astern propulsion.
 function hornGrade(e,add){
@@ -163,7 +183,7 @@ function hornGrade(e,add){
     !(h.p==='SSS'?(e.asternT!==null&&Math.abs(h.t-e.asternT)<=HORN_WIN):P.turns.some(x=>x.d===(h.p==='S'?1:-1)&&Math.abs(x.t-h.t)<=HORN_WIN)));
   if(stray.length)add(-15,false,`Sound signal with no matching manoeuvre: ${stray.map(h=>patHTML(h.p)).join(', ')} (Rule 34(a))`,'Manoeuvring signals say what you are doing right now. Only sound one when you actually alter course or go astern.');
 }
-const encTitle=e=>ENC_LABEL[e.cl.type]+(e.vt!=='power'?' · '+TYPE_LABEL[e.vt]:'');
+const encTitle=e=>ENC_LABEL[e.cl.type]+(e.vt!=='power'?' · '+TYPE_LABEL[e.vt]:'')+(e.rogue?' · ignored the rules':'');
 function showResult(e){
   const bad=e.notes.some(n=>n.ok===false),el=$('pResult');
   el.innerHTML=`<div class="rh"><b>${bad?'❌':'✅'} ${esc(e.name)} · ${encTitle(e)}</b><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></div>

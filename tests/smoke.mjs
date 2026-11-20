@@ -138,6 +138,28 @@ const m2 = await page.evaluate(() => {
 ok(m2.over && m2.hull === 3 && m2.spawned === m2.groups && m2.encs === 12 && m2.bad === 0 && m2.excused > 0,
   `mission 2: ${m2.encs} ships in ${m2.spawned}/${m2.groups} groups, score ${m2.score}, ${m2.bad} with mistakes, Rule 2(b) used ${m2.excused}×`);
 
+// 8. Rogue ships (Mission 6, Rules 17 & 34(d)): stand on, sound five short once it's clear she isn't acting, then act.
+const rogue = await page.evaluate(() => {
+  const keep = MISSIONS[5].enc, out = {};
+  const run = (name, kind, how) => {
+    MISSIONS[5].enc = [kind]; wkStart(MISSIONS[5]);
+    for (let i = 0; i < 6000 && !P.encs[0]?.done; i++) { const e = P.encs[0];
+      if (e?.announced && !e.bot) { const a = P.ais[0], c = cpaOf(P.own, a);
+        if (how === 'early') { e.bot = 1; P.own.th = norm(e.h0 + 90); }
+        else if (how !== 'nothing' && c.range < 2.2 && c.cpa < 0.35 && (e.seen ??= P.time) && P.time - e.seen >= 3.5 && a.state === 'cruise') {
+          e.bot = 1; P.horn.push({ t: P.time, p: 'SSSSS' }); const d = how === 'port' ? -60 : 90; P.own.th = norm(e.h0 + d); P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
+      wkTick(0.05); }
+    const e = P.encs[0]; out[name] = { pts: e.pts, rogue: e.rogue, acted: !!e.bot, notes: e.notes.filter(n => n.p).map(n => n.p) };
+  };
+  run('good', 'xport!', 'good'); run('nothing', 'xport!', 'nothing'); run('early', 'xport!', 'early'); run('port', 'xport!', 'port'); run('compliant', 'xport', 'good'); run('overtaken', 'overtaken!', 'good');
+  MISSIONS[5].enc = keep; return out;
+});
+const has = (r, p) => r.notes.includes(p);
+ok(rogue.good.rogue && has(rogue.good, 20) && has(rogue.good, 60) && rogue.good.pts > 0 &&
+   has(rogue.nothing, -60) && has(rogue.early, -50) && has(rogue.port, -40) &&
+   !rogue.compliant.rogue && !rogue.compliant.acted && has(rogue.compliant, 60) && has(rogue.overtaken, 60) && rogue.overtaken.pts > 0,
+  `rogue ships: act after five short ${rogue.good.pts}, never act ${rogue.nothing.pts}, act too early ${rogue.early.pts}, turn to port ${rogue.port.pts}, compliant ship held ${rogue.compliant.pts}, overtaker ${rogue.overtaken.pts}`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
