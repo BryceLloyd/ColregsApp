@@ -148,6 +148,8 @@ const rogue = await page.evaluate(() => {
         if (how === 'early') { e.bot = 1; P.own.th = norm(e.h0 + 90); }
         else if (how !== 'nothing' && c.range < 2.2 && c.cpa < 0.35 && (e.seen ??= P.time) && P.time - e.seen >= 3.5 && a.state === 'cruise') {
           e.bot = 1; P.horn.push({ t: P.time, p: 'SSSSS' }); const d = how === 'port' ? -60 : 90; P.own.th = norm(e.h0 + d); P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
+      // once she's past, resume course as a player would (otherwise you can end up running parallel with her for ever)
+      if (e?.bot && !e.resumed && P.ais[0] && cpaOf(P.own, P.ais[0]).tcpa < 0) { e.resumed = 1; P.own.th = e.h0; }
       wkTick(0.05); }
     const e = P.encs[0]; out[name] = { pts: e.pts, rogue: e.rogue, acted: !!e.bot, notes: e.notes.filter(n => n.p).map(n => n.p) };
   };
@@ -212,6 +214,25 @@ const night = await page.evaluate(() => {
 ok(night.over && night.hull === 3 && night.n === 7 && night.bad === 0 && night.explained === 7 && night.bridge === 'block' &&
    /green over white/.test(night.sw) && /red sidelight/.test(night.sw) && /trawling/.test(night.sw) && /both sidelights/.test(night.hd) && /heading straight at you/.test(night.hd),
   `mission 4 night: ${night.n} ships, ${night.explained} with their lights explained, bridge view on; "${night.sw}"`);
+
+// 12. Mission 5 (fog, Rules 19 & 35): no stand-on vessel, safe speed, fog signal, and how you alter.
+const fog = await page.evaluate(() => {
+  const keep = MISSIONS[4].enc, snd = window.sound; window.sound = () => {}; const out = {};
+  const run = (name, enc, how) => { MISSIONS[4].enc = enc; wkStart(MISSIONS[4]); if (how.signal) fogToggle(); if (how.full) P.own.tv = 12;
+    for (let i = 0; i < 30000 && !P.encs[0]?.done && !P.over; i++) { const o = P.own, e = P.encs[0], a = e && P.ais.find(x => x.id === e.id);
+      if (e?.announced && !e.bot && a) { e.bot = 1; o.th = norm(e.h0 + how.turn); if (how.slow) o.tv = 4; if (how.horn) P.horn.push({ t: P.time, p: how.horn }); }
+      wkTick(0.05); }
+    const e = P.encs[0]; out[name] = { role: e.cl.role, p: e.notes.filter(n => n.p).map(n => n.p), fogEnd: fogEndGrade() };
+  };
+  run('good', ['headon'], { signal: true, turn: 50, slow: true });
+  run('fast', ['headon'], { full: true, turn: 50 });
+  run('port', ['headon'], { signal: true, turn: -50, slow: true });
+  run('horn', ['xstbd'], { signal: true, turn: 50, slow: true, horn: 'S' });
+  MISSIONS[4].enc = keep; window.sound = snd; return out;
+});
+ok(fog.good.role === 'fog' && fog.good.p.includes(20) && fog.good.p.includes(60) && !fog.good.p.some(p => p < 0) && /\+60/.test(fog.good.fogEnd) &&
+   fog.fast.p.includes(-30) && /-60/.test(fog.fast.fogEnd) && fog.port.p.includes(-50) && fog.horn.p.includes(-10),
+  `mission 5 fog: good ${JSON.stringify(fog.good.p)}, too fast ${JSON.stringify(fog.fast.p)}, port turn ${JSON.stringify(fog.port.p)}, manoeuvring signal ${JSON.stringify(fog.horn.p)}`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
