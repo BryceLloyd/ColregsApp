@@ -18,6 +18,7 @@ function wkDraw(){
   if(!pctx)return;const c=pctx,o=P.own,k=(PH*0.6)/P.range,cy0=PH*0.66,ang=o.h*D2R,ca=Math.cos(ang),sa=Math.sin(ang);
   const S2=p=>{const dx=p.x-o.x,dy=p.y-o.y;return{x:PW/2+(dx*ca-dy*sa)*k,y:cy0-(dx*sa+dy*ca)*k};};
   c.fillStyle='#1b6aa0';c.fillRect(0,0,PW,PH);
+  if(P.chan)chanDraw(c,S2,k);
   // range rings + compass
   c.strokeStyle='rgba(255,255,255,.16)';c.lineWidth=1;c.fillStyle='rgba(255,255,255,.45)';c.font='10px sans-serif';c.textAlign='left';
   for(let i=1;i<=3;i++){const r=P.range/3*i*k;c.beginPath();c.arc(PW/2,cy0,r,0,7);c.stroke();c.fillText((P.range/3*i).toFixed(1)+' nm',PW/2+r*0.72+3,cy0+r*0.72-3);}
@@ -72,7 +73,7 @@ function wkUI(){
   if(!a){card.style.display='none';}
   else{card.style.display='block';const c=cpaOf(o,a),bb=(brg(o,a)+360)%360;
     let trend='—';if(a.bh.length>3){const db=norm(a.bh[a.bh.length-1].b-a.bh[0].b);trend=Math.abs(db)<1.2?(cpaOf(o,a).tcpa>0?'<span style="color:#ff9a9a">steady ⚠</span>':'steady (opening)'):db>0?'drawing right':'drawing left';}
-    const risk=c.cpa<0.4&&c.tcpa>0&&c.range<3.5,e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);
+    const risk=c.cpa<(P.chan?0.12:0.4)&&c.tcpa>0&&c.range<3.5, /* in a channel, passing 0.2 nm off port to port is normal */e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);
     card.innerHTML=`<b>${a.name}</b> · ${WK_TYPES[wkType(a)].look||'No day shapes'}<br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
       (c.tcpa>0?`CPA ${c.cpa.toFixed(2)} nm in ${Math.max(0,c.tcpa*WK_TS/60).toFixed(1)} min`:'Opening — past CPA')+
       (risk?`<br><span style="color:#ff9a9a;font-weight:700">Risk of collision</span>`:'');}

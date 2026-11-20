@@ -24,7 +24,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
 - `LEVELS` (`02-…`): Challenge levels. `sims` scenarios are drawn from `pool`, plus multiple-choice questions from `mcq: [[kind, n, topic]]`.
 - `RULEQ`, `LIGHTQ`, `SPOT`, `ORDERQ`: question banks. `makeQs(kind, n, topic)` mixes formats.
 - `BUOYS` (`06-buoyage.js`): IALA marks. **`REGION = 'A'` is the standard** (South Africa). Region B appears only as a Learn toggle and in one labelled scenario.
-- Watchkeeper (`15-…`): `MISSIONS`. `m1`, `m2` and `m6` are `ready`.
+- Watchkeeper (`15-…`): `MISSIONS`. `m1`, `m2`, `m3` and `m6` are `ready`.
   - `classify(me, target)` decides head-on, crossing, or overtaking, and from that give-way or stand-on.
   - `encTick` and `wkGrade` are the referee. An encounter is created when a ship spawns, and its baseline is your ordered course and speed at that moment.
   - Only actions taken before CPA count. Actions count from the moment they're ordered.
@@ -35,6 +35,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
   - An `enc` entry can be an array to spawn ships together (`['xstbd','xport']`); they reach your track at the times in `GROUP_T`. Don't group an overtaking ship with one that crosses her path: AI ships don't avoid each other.
   - Two at once: if you're stand-on to one ship but alter for an overlapping give-way encounter, that's allowed (Rule 2(b)): `e.excused`, +40 instead of the Rule 17 penalty.
   - Rogue ships (`m6`): an `enc` entry ending `!` is a rogue give-way ship that holds course and speed; `?` makes it rogue half the time. For your stand-on encounter, `dueT` is when a compliant ship would act; from `ROGUE_AFTER` (3 real s) later it's "apparent" and you may act (Rule 17(a)(ii)) without the Rule 17(a) penalty. `rogueGrade`: five short +20 / −15 (Rule 34(d)), acting at 0.5 nm+ +60, later +30 (17(b)), never −60, port turn for a ship on your port side −40 (17(c)). Against a rogue crossing from port, stopping or a bold 90° starboard turn at full speed works; slowing while turning to starboard lets her catch you.
+  - Channel missions (`18-watchkeeper-channel.js`, `m3`): a mission with `chan:{pts,hw,bank}` draws land, shallows, the dredged channel and Region A lateral marks (red to port, green to starboard going in). `chanPos` gives the signed offset (+ = starboard side going in) and distance along. Leaving the channel (|off| > `hw`) runs you aground: −1 heart, −100, reset inside, stopped. Waypoints count when you're abeam of them. `chanTick` scores Rule 9(a) time on the starboard side (debrief: 90%+ +100, 70%+ +40, else −50) and one prolonged blast (▬) within 1 nm before each 25°+ bend (Rules 9(f) & 34(e), +15 / −10). `'chan:out'` spawns an outbound ship that follows her own starboard side; that encounter (`cl.type 'chan'`) is graded by `chanEncGrade`: your side at CPA (+60 / −60) and passing distance, not by a 30° turn, and channel bends don't need Rule 34(a) signals.
   - Time scale: `WK_TS = 20` (×20 real time).
 
 ## Content rules
@@ -62,7 +63,9 @@ Watchkeeper stages, in order:
    - 2b ✅ Horn scoring (Rule 34(a)): manoeuvring signals scored, wrong and stray signals penalised.
    - 2c ✅ Mission 2 (Busy crossing): 12 ships in 9 groups, three two-ship moments, mixed types.
    - 2d ✅ Mission 6 (Rogue ships): give-way ships that hold on; stand on, five short, then act (Rules 17 & 34(d)).
-3. Mission 3: buoyed harbour channel (Region A), narrow-channel judging (Rule 9), grounding.
+3. Mission 3, in parts:
+   - 3a ✅ Buoyed harbour channel (Region A), keep to starboard (Rule 9(a)), blind-bend signal (9(f) & 34(e)), grounding, outbound ships meeting you.
+   - 3b Small craft, sail and fishing vessels crossing or in the channel (Rule 9(b)–(d)); overtaking in a channel and its signals (Rule 9(e)).
 4. Mission 4 (night: lights only, with a bridge view) and Mission 5 (fog: radar and sound signals, Rule 19).
 5. Endless mode and Watchkeeper leaderboards (Supabase).
 

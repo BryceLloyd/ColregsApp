@@ -160,6 +160,22 @@ ok(rogue.good.rogue && has(rogue.good, 20) && has(rogue.good, 60) && rogue.good.
    !rogue.compliant.rogue && !rogue.compliant.acted && has(rogue.compliant, 60) && has(rogue.overtaken, 60) && rogue.overtaken.pts > 0,
   `rogue ships: act after five short ${rogue.good.pts}, never act ${rogue.nothing.pts}, act too early ${rogue.early.pts}, turn to port ${rogue.port.pts}, compliant ship held ${rogue.compliant.pts}, overtaker ${rogue.overtaken.pts}`);
 
+// 9. Mission 3 (harbour channel, Rule 9): keep to starboard, signal at blind bends, don't run aground.
+const chan = await page.evaluate(() => {
+  const run = (off, horn, steps = 20000) => { wkStart(MISSIONS[2]); const ch = P.m.chan;
+    for (let i = 0; i < steps && !P.over; i++) { const o = P.own, q = chanPos(ch, o); o.th = brg(o, chanAt(ch, q.s + 0.5, ch.hw * off));
+      if (horn) for (const b of P.chan.bends) if (!b.hornd && q.s > b.s - 0.9 && q.s < b.s) { b.hornd = 1; P.horn.push({ t: P.time, p: 'L' }); }
+      wkTick(0.05); }
+    const C = P.chan, q = chanPos(ch, P.own);
+    return { over: P.over, hull: P.hull, pct: Math.round(100 * C.stbdT / C.inT), aground: C.aground, bends: C.bends.filter(b => b.ok).length,
+      meets: P.encs.filter(e => e.cl.type === 'chan' && e.pts > 0).length, inside: Math.abs(q.off) < ch.hw };
+  };
+  return { good: run(0.4, true), port: run(-0.4, true), quiet: run(0.4, false), ground: run(1.6, false, 400) };
+});
+ok(chan.good.over && chan.good.hull === 3 && chan.good.pct >= 90 && chan.good.aground === 0 && chan.good.bends === 3 && chan.good.meets === 3 &&
+   chan.port.meets === 0 && chan.quiet.bends === 0 && chan.ground.aground > 0 && chan.ground.hull < 3 && chan.ground.inside,
+  `mission 3 channel: good run ${chan.good.pct}% starboard, ${chan.good.meets}/3 meetings, ${chan.good.bends}/3 bend signals; port side ${chan.port.meets} good meetings; leaving the channel runs aground (${chan.ground.aground}×) and resets you inside`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
