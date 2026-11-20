@@ -147,6 +147,7 @@ input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);ba
 #pResult ul{margin:6px 0 8px;padding-left:2px;list-style:none}#pResult li{margin:4px 0}
 #pResult li.g{color:#bfeccd}#pResult li.b{color:#ffb3b3}#pResult li.t{color:#e8d9a8}
 #pResult .fix{color:#ffd98a;margin:2px 0 0 16px;font-size:12px}
+#pResGo{position:sticky;bottom:-9px;width:100%;margin:0;box-shadow:0 -10px 12px rgba(10,20,36,.96)} /* always visible, even when the card scrolls */
 .enc .fix{color:#ffd98a;font-size:12px;margin-left:14px}
 #pHint{flex:none;font-size:12.5px;border-radius:10px;padding:6px 10px;background:#2a2410;color:#ffd98a;min-height:30px;display:flex;align-items:center}
 #pHint.risk{background:#3a1416;color:#ff9a9a}#pHint.calm{background:var(--panel);color:var(--mut)}
