@@ -160,6 +160,59 @@ ok(rogue.good.rogue && has(rogue.good, 20) && has(rogue.good, 60) && rogue.good.
    !rogue.compliant.rogue && !rogue.compliant.acted && has(rogue.compliant, 60) && has(rogue.overtaken, 60) && rogue.overtaken.pts > 0,
   `rogue ships: act after five short ${rogue.good.pts}, never act ${rogue.nothing.pts}, act too early ${rogue.early.pts}, turn to port ${rogue.port.pts}, compliant ship held ${rogue.compliant.pts}, overtaker ${rogue.overtaken.pts}`);
 
+// 9. Mission 3 (harbour channel, Rule 9): keep to starboard, signal at blind bends, don't run aground.
+const chan = await page.evaluate(() => {
+  const keep = MISSIONS[2].enc; MISSIONS[2].enc = ['chan:out', 'chan:out', 'chan:out'];
+  const run = (off, horn, steps = 20000) => { wkStart(MISSIONS[2]); const ch = P.m.chan;
+    for (let i = 0; i < steps && !P.over; i++) { const o = P.own, q = chanPos(ch, o); o.th = brg(o, chanAt(ch, q.s + 0.5, ch.hw * off));
+      if (horn) for (const b of P.chan.bends) if (!b.hornd && q.s > b.s - 0.9 && q.s < b.s) { b.hornd = 1; P.horn.push({ t: P.time, p: 'L' }); }
+      wkTick(0.05); }
+    const C = P.chan, q = chanPos(ch, P.own);
+    return { over: P.over, hull: P.hull, pct: Math.round(100 * C.stbdT / C.inT), aground: C.aground, bends: C.bends.filter(b => b.ok).length,
+      meets: P.encs.filter(e => e.cl.type === 'chan' && e.pts > 0).length, inside: Math.abs(q.off) < ch.hw };
+  };
+  const res = { good: run(0.4, true), port: run(-0.4, true), quiet: run(0.4, false), ground: run(1.6, false, 400) };
+  MISSIONS[2].enc = keep; return res;
+});
+ok(chan.good.over && chan.good.hull === 3 && chan.good.pct >= 90 && chan.good.aground === 0 && chan.good.bends === 3 && chan.good.meets === 3 &&
+   chan.port.meets === 0 && chan.quiet.bends === 0 && chan.ground.aground > 0 && chan.ground.hull < 3 && chan.ground.inside,
+  `mission 3 channel: good run ${chan.good.pct}% starboard, ${chan.good.meets}/3 meetings, ${chan.good.bends}/3 bend signals; port side ${chan.port.meets} good meetings; leaving the channel runs aground (${chan.ground.aground}×) and resets you inside`);
+
+// 10. Channel traffic (Rule 9(b)-(e)): a small craft crossing your bow, and overtaking with signals.
+const ch2 = await page.evaluate(() => {
+  const keep = MISSIONS[2].enc, out = {};
+  const run = (name, kind, how) => { MISSIONS[2].enc = [kind]; wkStart(MISSIONS[2]); const ch = P.m.chan; let stop = false;
+    for (let i = 0; i < 20000 && !P.encs[0]?.done && !P.over; i++) { const o = P.own, q = chanPos(ch, o), e = P.encs[0], a = e && P.ais.find(x => x.id === e.id); let off = 0.4;
+      if (a && a.state === 'chancross' && how === 'slow' && a.mode === 'go' && !e.bot) { e.bot = 1; stop = true; P.horn.push({ t: P.time, p: 'SSSSS' }); }
+      if (stop) o.tv = a && a.mode !== 'done' ? 0 : 12;
+      if (a && a.state === 'chanover' && chanPos(ch, a).s - q.s < 0.8) { if (how === 'signal' && !e.sig) { e.sig = 1; P.horn.push({ t: P.time, p: 'LLSS' }); }
+        if (how !== 'signal' || e.agreedT != null) { off = q.s < chanPos(ch, a).s + 0.4 ? -0.45 : 0.4; o.tv = 12; } else o.tv = 4; }
+      o.th = brg(o, chanAt(ch, q.s + 0.5, ch.hw * off)); wkTick(0.05); }
+    const e = P.encs[0]; out[name] = { pts: e.pts, p: e.notes.filter(n => n.p).map(n => n.p), agreed: e.agreedT != null, coll: e.collided };
+  };
+  run('rogueSlow', 'chan:cross!', 'slow'); run('rogueIgnore', 'chan:cross!', 'ignore'); run('waits', 'chan:cross', 'ignore');
+  run('overSignal', 'chan:over', 'signal'); run('overNoSignal', 'chan:over', 'none');
+  MISSIONS[2].enc = keep; return out;
+});
+ok(ch2.rogueSlow.p.includes(20) && ch2.rogueSlow.p.includes(40) && ch2.rogueSlow.pts > 0 && ch2.rogueIgnore.pts < 0 && ch2.waits.p.includes(40) &&
+   ch2.overSignal.agreed && ch2.overSignal.p.includes(20) && ch2.overNoSignal.p.includes(-30),
+  `channel traffic: crossing craft slow+five short ${ch2.rogueSlow.pts}, ignored ${ch2.rogueIgnore.pts}${ch2.rogueIgnore.coll ? ' (collision)' : ''}, waiting craft ${ch2.waits.pts}; overtaking with agreement ${ch2.overSignal.pts}, without signal ${ch2.overNoSignal.pts}`);
+
+// 11. Mission 4 (night): radar echoes on the chart, lights in the bridge view, and the result card explains her lights.
+const night = await page.evaluate(() => {
+  wkStart(MISSIONS[3]);
+  for (let i = 0; i < 20000 && !P.over; i++) { const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
+    if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); e.bot = 1; P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
+    else { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    wkTick(0.05); if (i % 40 === 0) { wkDraw(); wkUI(); } }
+  const me = { x: 0, y: 0, h: 0 }, sw = lightsWords({ type: 'fishing', x: 1, y: 1, h: 270 }, me), hd = lightsWords({ type: 'power', x: 0, y: 2, h: 180 }, me);
+  return { over: P.over, hull: P.hull, n: P.encs.length, bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length,
+    explained: P.encs.filter(e => e.notes.some(n => n.txt.startsWith('When you first saw her'))).length, sw, hd, bridge: $('pBridge').style.display };
+});
+ok(night.over && night.hull === 3 && night.n === 7 && night.bad === 0 && night.explained === 7 && night.bridge === 'block' &&
+   /green over white/.test(night.sw) && /red sidelight/.test(night.sw) && /trawling/.test(night.sw) && /both sidelights/.test(night.hd) && /heading straight at you/.test(night.hd),
+  `mission 4 night: ${night.n} ships, ${night.explained} with their lights explained, bridge view on; "${night.sw}"`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
