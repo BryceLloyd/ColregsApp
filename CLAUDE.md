@@ -28,6 +28,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
   - `classify(me, target)` decides head-on, crossing, or overtaking, and from that give-way or stand-on.
   - `encTick` and `wkGrade` are the referee. An encounter is created when a ship spawns, and its baseline is your ordered course and speed at that moment.
   - Only actions taken before CPA count. Actions count from the moment they're ordered.
+  - Overtaking: slowing to her speed or less and not closing for 3 s closes the encounter as kept clear (`droppedBack`). If you later close in on her again, one new encounter opens for that ship.
   - Time scale: `WK_TS = 20` (×20 real time).
 
 ## Content rules
@@ -56,5 +57,4 @@ Watchkeeper stages, in order:
 5. Endless mode and Watchkeeper leaderboards (Supabase).
 
 Known issues and ideas:
-- Watchkeeper: if you slow to the speed of the ship you're overtaking, that encounter never ends, so spawning stalls. Either nudge the player or treat dropping back as keeping clear.
 - If the codebase keeps growing, consider moving to ES modules (Vite) and TypeScript. Do this as a separate, approved step.
