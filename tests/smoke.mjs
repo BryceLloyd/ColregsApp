@@ -120,6 +120,24 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 ok(same(horn.correct, [15]) && same(horn.missing, [-10]) && same(horn.wrong, [-20]) && same(horn.stray, [15, -15]) && same(horn.astern, [10]) && same(horn.asternMissing, [-10]),
   `horn scoring: correct +15, missing −10, wrong −20, stray −15, astern +10/−10 ${JSON.stringify(horn)}`);
 
+// 7. Mission 2 (Busy crossing): every group spawns, two-ship moments work, and altering for a give-way ship
+//    while stand-on to another is allowed (Rule 2(b)).
+const m2 = await page.evaluate(() => {
+  wkStart(MISSIONS[1]); let turnFor = null;
+  for (let i = 0; i < 30000 && !P.over; i++) {
+    const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
+    if (turnFor && turnFor.done) turnFor = null;
+    for (const e of act) if (e.cl.role === 'give' && !e.bot) { e.bot = 1;
+      if (!turnFor) { turnFor = e; const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
+    if (!act.length) { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    wkTick(0.05);
+  }
+  return { over: P.over, hull: P.hull, score: P.score, spawned: P.spawnI, groups: P.m.enc.length, encs: P.encs.length,
+    bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length, excused: P.encs.filter(e => e.excused).length };
+});
+ok(m2.over && m2.hull === 3 && m2.spawned === m2.groups && m2.encs === 12 && m2.bad === 0 && m2.excused > 0,
+  `mission 2: ${m2.encs} ships in ${m2.spawned}/${m2.groups} groups, score ${m2.score}, ${m2.bad} with mistakes, Rule 2(b) used ${m2.excused}×`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }

@@ -5,7 +5,8 @@ const WK_TS=20, KN=WK_TS/3600;  // knots -> nm per real second at 20x
 const TELE=[{l:'Astern',v:-4},{l:'Stop',v:0},{l:'Slow',v:4},{l:'Half',v:8},{l:'Full',v:12}];
 const MISSIONS=[
  {id:'m1',name:'Open water',desc:'Daylight, light traffic: head-on, crossing and overtaking encounters. Watch for day shapes (Rule 18).',wps:[[0.6,5],[3.6,8.6],[3.0,13.2],[6.4,16.4]],enc:['xstbd','headon','xport','overtaking','xport:r18','overtaken','headon:r18'],par:310,ready:true},
- {id:'m2',name:'Busy crossing',desc:'More traffic and mixed vessel types (Rule 18).'},
+ {id:'m2',name:'Busy crossing',desc:'Heavier traffic, sometimes two ships at once, and mixed vessel types (Rule 18).',wps:[[-0.5,5],[2.5,9.5],[1.0,14.5],[4.5,18.5],[3.0,25]],
+  enc:['xstbd','xport:r18',['xstbd','xport'],'headon:r18','overtaken',['headon','xstbd:fishing'],'overtaking',['xstbd:r18','xport:r18'],'xport'],par:520,ready:true},
  {id:'m3',name:'Harbour channel',desc:'A buoyed channel, IALA Region A.'},
  {id:'m4',name:'Night passage',desc:'Lights only.'},
  {id:'m5',name:'Fog',desc:'Radar and sound signals only.'},
@@ -53,9 +54,10 @@ function wkResize(){const st=$('pStage'),dpr=window.devicePixelRatio||1;PW=st.cl
 window.addEventListener('resize',()=>{if(view==='play')wkResize();});
 function wkToast(txt,cls){if(!P)return;P.toasts.push({txt,cls,t:P.time});if(P.toasts.length>3)P.toasts.shift();renderToasts();}
 function renderToasts(){$('pToast').innerHTML=P.toasts.map(x=>`<div class="ptoast ${x.cls}">${esc(x.txt)}</div>`).join('');}
-function spawnAI(kind){
+const GROUP_T=[20,28]; // ships spawned together reach your track at different times
+function spawnAI(kind,T=20){
   let [geo,ty]=kind.split(':');ty=ty==='r18'?R18_POOL[Math.floor(Math.random()*R18_POOL.length)]:ty||'power';kind=geo;
-  const o=P.own,T=20,sp=Math.max(o.v,6)*KN,M={x:o.x+Math.sin(o.h*D2R)*sp*T,y:o.y+Math.cos(o.h*D2R)*sp*T};
+  const o=P.own,sp=Math.max(o.v,6)*KN,M={x:o.x+Math.sin(o.h*D2R)*sp*T,y:o.y+Math.cos(o.h*D2R)*sp*T};
   let h,v,x,y;const lat=(d)=>({x:Math.cos(o.h*D2R)*d,y:-Math.sin(o.h*D2R)*d});
   if(kind==='overtaking'){h=o.h;v=4;const l=lat(0.04);x=o.x+Math.sin(o.h*D2R)*1.4+l.x;y=o.y+Math.cos(o.h*D2R)*1.4+l.y;}
   else if(kind==='overtaken'){h=o.h;v=Math.max(o.v,6)+9;const l=lat(-0.05);x=o.x-Math.sin(o.h*D2R)*1.6+l.x;y=o.y-Math.cos(o.h*D2R)*1.6+l.y;}
@@ -104,7 +106,9 @@ function encTick(a,c){
       if(e.cl.type==='xstbd'&&e.dir<0)wkToast('✗ Rule 15: turn to starboard and pass astern of her','bad');}
     if(o.tv<0&&e.asternT===null)e.asternT=P.time;
     if(!e.act&&(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)))e.act={range:c.range,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};
-    if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){e.standBreak=true;wkToast('✗ Rule 17(a): you are stand-on — hold course and speed','bad');}
+    if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&!e.excused&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){
+      const g=P.encs.find(x=>x!==e&&x.announced&&x.cl.role==='give'&&(!x.done||x.doneT>=e.t0)); // a give-way encounter overlapping this one
+      if(g)e.excused=g.name;else{e.standBreak=true;wkToast('✗ Rule 17(a): you are stand-on — hold course and speed','bad');}}
   }
   const asp=norm(brg(a,o)-a.h);
   if(e.cl.type==='xstbd'&&!e.crossed&&Math.sign(asp)!==Math.sign(e.asp)&&Math.abs(asp)<40&&c.range<1.5){e.crossed=true;wkToast('✗ Rule 15: you crossed ahead of her','bad');}
@@ -136,6 +140,7 @@ function wkGrade(e){
     if(e.droppedBack)add(0,true,'Dropped back and stayed astern of her: that keeps clear (Rules 8(e) & 13)');
   }else{
     if(e.standBreak)add(-50,false,'Changed course or speed while she was keeping clear (Rule 17(a))','As stand-on, hold course and speed so she can predict you. Only act if she clearly isn\'t (sound 5 short first) or collision is imminent.');
+    else if(e.excused)add(40,true,`Altered for ${e.excused}, which you had to keep clear of. With two ships, keeping clear of one comes before standing on for the other (Rule 2(b))`);
     else add(60,true,`Held course and speed as the stand-on vessel (${e.cl.rule})`);
   }
   if(!e.collided){if(e.minR<0.2)add(-50,false,`Close quarters: passed only ${e.minR.toFixed(2)} nm off`,'Make a bigger alteration (or slow more) so you pass at least 0.5 nm clear.');
@@ -181,10 +186,10 @@ function wkTick(dt){
   // spawn
   const m=P.m,active=P.encs.some(e=>!e.done),near=P.ais.some(a=>{const c=cpaOf(o,a),le=P.encs.findLast(e=>e.id===a.id);
     if(c.tcpa<=0&&le?.droppedBack)return false;
-    if(le?.done&&(c.tcpa<=0||c.cpa>=1)&&c.range>=0.8)return false; // dealt with and passing well clear: doesn't hold up new traffic
+    if(le?.done&&(c.tcpa<=0||c.cpa>=0.5)&&c.range>=0.5)return false; // dealt with and passing clear: doesn't hold up new traffic
     return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
   const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0;
-  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>3&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){spawnAI(m.enc[P.spawnI++]);P.lastSpawn=P.time;}
+  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>3&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const g=m.enc[P.spawnI++];[].concat(g).forEach((k,i)=>spawnAI(k,GROUP_T[i]));P.lastSpawn=P.time;}
   // waypoints
   const wp=m.wps[P.wpi];
   if(Math.hypot(wp[0]-o.x,wp[1]-o.y)<0.2){P.score+=50;P.wpi++;
