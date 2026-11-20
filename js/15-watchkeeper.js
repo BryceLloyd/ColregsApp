@@ -9,7 +9,8 @@ const MISSIONS=[
   enc:['xstbd','xport:r18',['xstbd','xport'],'headon:r18','overtaken',['headon','xstbd:fishing'],'overtaking',['xstbd:r18','xport:r18'],'xport'],par:520,ready:true},
  {id:'m3',name:'Harbour channel',desc:'A buoyed channel into harbour (IALA Region A): keep to starboard, mind the blind bends, don\'t run aground (Rule 9).',
   chan:{pts:[[0,-3],[0,4],[2.2,7.2],[2.2,11],[0.6,14],[-0.6,18],[-0.8,21]],hw:0.3,bank:0.25},wps:[[0,4],[2.2,7.2],[2.2,11],[0.6,14],[-0.6,18]],enc:['chan:out','chan:cross?','chan:over','chan:out','chan:cross!'],par:340,ready:true},
- {id:'m4',name:'Night passage',desc:'Lights only.'},
+ {id:'m4',name:'Night passage',desc:'Night: the chart shows radar echoes only. Read each ship\'s lights in the bridge view to know what she is and which way she\'s heading.',night:true,
+  wps:[[0.6,5],[3.6,8.6],[3.0,13.2],[6.4,16.4]],enc:['headon','xstbd','xport','overtaking','xport:r18','headon:r18','xstbd:fishing'],par:340,ready:true},
  {id:'m5',name:'Fog',desc:'Radar and sound signals only.'},
  {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules. Stand on, sound five short when in doubt, and act when you must (Rules 17 & 34(d)).',wps:[[0.5,5],[-2.5,9],[0,13.5],[-1.5,18],[1.5,21.5]],
   enc:['xport','xport!','xstbd','overtaken?','xport?','headon','overtaken!','xport?'],par:510,ready:true},
@@ -47,13 +48,13 @@ function wkStart(m){
   const wp=m.wps[0],h0=Math.round(brg({x:0,y:0},{x:wp[0],y:wp[1]}));
   P={m,own:{x:0,y:0,h:h0,th:h0,v:12,tv:12,tele:4,trail:[]},ais:[],encs:[],wpi:0,score:0,hull:3,time:0,horn:[],turns:[],refTh:h0,spawnI:0,lastSpawn:-8,
      sel:null,range:3,hints:$('pHints').checked,paused:false,over:false,nid:0,toasts:[],trailT:0};
-  P.chan=chanInit(m);$('pHornChan').style.display=m.chan?'flex':'none';
+  P.chan=chanInit(m);$('pHornChan').style.display=m.chan?'flex':'none';$('pBridge').style.display=m.night?'block':'none';
   $('pTitle').textContent=`${MISSIONS.indexOf(m)+1} · ${m.name}`;$('pPause').textContent='⏸';
   $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}">${x.l}</button>`).join('');
   $('pTele').querySelectorAll('button').forEach(b=>b.onclick=()=>{P.own.tele=+b.dataset.i;P.own.tv=TELE[P.own.tele].v;wkUI();});
   show('play');wkResize();wkUI();wkToast('Steer for waypoint 1 ⚑','info');
 }
-function wkResize(){const st=$('pStage'),dpr=window.devicePixelRatio||1;PW=st.clientWidth;PH=st.clientHeight;if(!PW||!PH)return;
+function wkResize(){if(P?.m.night)nightResize();const st=$('pStage'),dpr=window.devicePixelRatio||1;PW=st.clientWidth;PH=st.clientHeight;if(!PW||!PH)return;
   const c=$('pcv');c.width=PW*dpr;c.height=PH*dpr;pctx=c.getContext('2d');pctx.setTransform(dpr,0,0,dpr,0,0);}
 window.addEventListener('resize',()=>{if(view==='play')wkResize();});
 function wkToast(txt,cls){if(!P)return;P.toasts.push({txt,cls,t:P.time});if(P.toasts.length>3)P.toasts.shift();renderToasts();}
@@ -108,7 +109,7 @@ function encTick(a,c){
   if(!e){ // you dropped back from her earlier and are now closing in again: that's a new encounter
     if(c.tcpa>0&&c.cpa<0.5&&c.range<3.2&&!a.dead&&P.encs.findLast(x=>x.id===a.id).droppedBack){newEnc(a);e=P.encs[P.encs.length-1];}else return;}
   const before=c.tcpa>0;
-  if(!e.announced&&before&&c.cpa<0.5&&c.range<3.2){e.announced=true;P.sel=a.id;wkToast(encAlert(e),'info');}
+  if(!e.announced&&before&&c.cpa<0.5&&c.range<3.2){e.announced=true;if(P.m.night)e.lights=lightsWords(a,o);P.sel=a.id;wkToast(encAlert(e),'info');}
   e.minR=Math.min(e.minR,c.range);
   const dho=norm(o.th-e.h0); // ordered course change since the encounter began
   if(before){
@@ -139,8 +140,9 @@ function wkGrade(e){
   const add=(p,ok,txt,fix)=>{pts+=p;N.push({ok,txt,p,fix});};
   if(e.collided)add(-200,false,'Collision','Act earlier and make a bigger change of course or speed.');
   if(e.hintCost)N.push({ok:null,txt:'You used a hint (−20, already taken)',p:0});
+  if(e.lights)N.push({ok:null,txt:`When you first saw her she showed ${e.lights}`,p:0});
   if(e.cl.type.startsWith('chan')){chanGrade(e,add);e.pts=pts;P.score+=pts;return showResult(e);}
-  if(e.cl.r18)N.push({ok:null,txt:`${WK_TYPES[e.vt].look} = ${TYPE_LABEL[e.vt].toLowerCase()}. ${e.cl.rule} puts her above a power-driven vessel, so ${e.cl.type==='headon'?'Rule 14 (head-on) didn\'t apply':'the crossing rule didn\'t apply'}: you keep out of her way.`,p:0});
+  if(e.cl.r18)N.push({ok:null,txt:`${P.m.night?'':WK_TYPES[e.vt].look+' = '+TYPE_LABEL[e.vt].toLowerCase()+'. '}${e.cl.rule} puts her above a power-driven vessel, so ${e.cl.type==='headon'?'Rule 14 (head-on) didn\'t apply':'the crossing rule didn\'t apply'}: you keep out of her way.`,p:0});
   if(e.cl.role==='give'){
     if(!e.act)add(-100,false,`No substantial action taken (${e.cl.rule} & Rule 16)`,
       e.cl.r18?`She was a ${TYPE_LABEL[e.vt].toLowerCase()}. Keep out of her way: alter boldly (30° or more) or slow right down, early.`:

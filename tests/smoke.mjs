@@ -198,6 +198,21 @@ ok(ch2.rogueSlow.p.includes(20) && ch2.rogueSlow.p.includes(40) && ch2.rogueSlow
    ch2.overSignal.agreed && ch2.overSignal.p.includes(20) && ch2.overNoSignal.p.includes(-30),
   `channel traffic: crossing craft slow+five short ${ch2.rogueSlow.pts}, ignored ${ch2.rogueIgnore.pts}${ch2.rogueIgnore.coll ? ' (collision)' : ''}, waiting craft ${ch2.waits.pts}; overtaking with agreement ${ch2.overSignal.pts}, without signal ${ch2.overNoSignal.pts}`);
 
+// 11. Mission 4 (night): radar echoes on the chart, lights in the bridge view, and the result card explains her lights.
+const night = await page.evaluate(() => {
+  wkStart(MISSIONS[3]);
+  for (let i = 0; i < 20000 && !P.over; i++) { const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
+    if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); e.bot = 1; P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
+    else { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    wkTick(0.05); if (i % 40 === 0) { wkDraw(); wkUI(); } }
+  const me = { x: 0, y: 0, h: 0 }, sw = lightsWords({ type: 'fishing', x: 1, y: 1, h: 270 }, me), hd = lightsWords({ type: 'power', x: 0, y: 2, h: 180 }, me);
+  return { over: P.over, hull: P.hull, n: P.encs.length, bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length,
+    explained: P.encs.filter(e => e.notes.some(n => n.txt.startsWith('When you first saw her'))).length, sw, hd, bridge: $('pBridge').style.display };
+});
+ok(night.over && night.hull === 3 && night.n === 7 && night.bad === 0 && night.explained === 7 && night.bridge === 'block' &&
+   /green over white/.test(night.sw) && /red sidelight/.test(night.sw) && /trawling/.test(night.sw) && /both sidelights/.test(night.hd) && /heading straight at you/.test(night.hd),
+  `mission 4 night: ${night.n} ships, ${night.explained} with their lights explained, bridge view on; "${night.sw}"`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }

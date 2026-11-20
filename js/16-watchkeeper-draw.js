@@ -17,7 +17,7 @@ function wkShapes(c,type,x,y){
 function wkDraw(){
   if(!pctx)return;const c=pctx,o=P.own,k=(PH*0.6)/P.range,cy0=PH*0.66,ang=o.h*D2R,ca=Math.cos(ang),sa=Math.sin(ang);
   const S2=p=>{const dx=p.x-o.x,dy=p.y-o.y;return{x:PW/2+(dx*ca-dy*sa)*k,y:cy0-(dx*sa+dy*ca)*k};};
-  c.fillStyle='#1b6aa0';c.fillRect(0,0,PW,PH);
+  c.fillStyle=P.m.night?'#0b1a2e':'#1b6aa0';c.fillRect(0,0,PW,PH);
   if(P.chan)chanDraw(c,S2,k);
   // range rings + compass
   c.strokeStyle='rgba(255,255,255,.16)';c.lineWidth=1;c.fillStyle='rgba(255,255,255,.45)';c.font='10px sans-serif';c.textAlign='left';
@@ -35,7 +35,7 @@ function wkDraw(){
   c.beginPath();c.arc(w.x,w.y,9,0,7);c.stroke();c.fillStyle='#ffd21f';c.font='bold 11px sans-serif';c.fillText('⚑ WP'+(P.wpi+1),w.x,w.y-14);
   // trails
   const tr=(arr,col)=>{c.fillStyle=col;for(const p of arr){const s=S2(p);c.beginPath();c.arc(s.x,s.y,1.4,0,7);c.fill();}};
-  tr(o.trail,'rgba(255,255,255,.45)');for(const a of P.ais)tr(a.trail,'rgba(255,200,160,.5)');
+  tr(o.trail,'rgba(255,255,255,.45)');if(!P.m.night)for(const a of P.ais)tr(a.trail,'rgba(255,200,160,.5)');
   // ships
   const ship=(b,col,isOwn)=>{const s=S2(b);
     const vk=b.v*KN*WK_TS*0+b.v*(3/60);// 3-minute vector (nm)
@@ -48,13 +48,14 @@ function wkDraw(){
     if(b.type==='sail'){c.fillStyle='#fff';c.beginPath();c.moveTo(0,-7);c.lineTo(7,7);c.lineTo(0,7);c.closePath();c.fill();c.strokeStyle='#333';c.beginPath();c.moveTo(0,-7);c.lineTo(0,7);c.stroke();}
     else{c.fillStyle='#f2f2f2';c.fillRect(-3,1,6,4);}
     c.restore();if(!isOwn)wkShapes(c,b.type,s.x+31,s.y-4);return s;};
-  for(const a of P.ais){const s=ship(a,'#e8742c',false);c.fillStyle='#fff';c.font='10.5px sans-serif';c.textAlign='center';c.fillText(a.name,s.x,s.y+22);
+  for(const a of P.ais){const s=P.m.night?S2(a):ship(a,'#e8742c',false);if(P.m.night)nightEcho(c,s);c.fillStyle='#fff';c.font='10.5px sans-serif';c.textAlign='center';c.fillText(a.name,s.x,s.y+22);
     const e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);if(e){c.strokeStyle='rgba(255,90,90,.9)';c.lineWidth=1.5;c.beginPath();c.arc(s.x,s.y,16,0,7);c.stroke();}
     if(P.sel===a.id){c.strokeStyle='#ffd98a';c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.arc(s.x,s.y,20,0,7);c.stroke();c.setLineDash([]);}}
   ship(o,'#2b7de9',true);
   // compass badge
   c.save();c.translate(20,22);c.fillStyle='rgba(5,12,24,.5)';c.beginPath();c.arc(0,0,15,0,7);c.fill();c.rotate(-o.h*D2R);
   c.fillStyle='#ff6b6b';c.beginPath();c.moveTo(0,-12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.fillStyle='rgba(255,255,255,.75)';c.beginPath();c.moveTo(0,12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.restore();
+  if(P.m.night)nightBridge();
   if(P.paused){c.fillStyle='rgba(0,0,0,.45)';c.fillRect(0,0,PW,PH);c.fillStyle='#fff';c.font='bold 20px sans-serif';c.textAlign='center';c.fillText('⏸ Paused',PW/2,PH/2);}
 }
 let wkUIt=0;
@@ -74,7 +75,7 @@ function wkUI(){
   else{card.style.display='block';const c=cpaOf(o,a),bb=(brg(o,a)+360)%360;
     let trend='—';if(a.bh.length>3){const db=norm(a.bh[a.bh.length-1].b-a.bh[0].b);trend=Math.abs(db)<1.2?(cpaOf(o,a).tcpa>0?'<span style="color:#ff9a9a">steady ⚠</span>':'steady (opening)'):db>0?'drawing right':'drawing left';}
     const risk=c.cpa<(P.chan?0.12:0.4)&&c.tcpa>0&&c.range<3.5, /* in a channel, passing 0.2 nm off port to port is normal */e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);
-    card.innerHTML=`<b>${a.name}</b> · ${WK_TYPES[wkType(a)].look||'No day shapes'}<br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
+    card.innerHTML=`<b>${a.name}</b> · ${P.m.night?'Lights: see the bridge view':WK_TYPES[wkType(a)].look||'No day shapes'}<br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
       (c.tcpa>0?`CPA ${c.cpa.toFixed(2)} nm in ${Math.max(0,c.tcpa*WK_TS/60).toFixed(1)} min`:'Opening — past CPA')+
       (risk?`<br><span style="color:#ff9a9a;font-weight:700">Risk of collision</span>`:'');}
   // hint bar
