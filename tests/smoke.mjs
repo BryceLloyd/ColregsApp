@@ -148,6 +148,8 @@ const rogue = await page.evaluate(() => {
         if (how === 'early') { e.bot = 1; P.own.th = norm(e.h0 + 90); }
         else if (how !== 'nothing' && c.range < 2.2 && c.cpa < 0.35 && (e.seen ??= P.time) && P.time - e.seen >= 3.5 && a.state === 'cruise') {
           e.bot = 1; P.horn.push({ t: P.time, p: 'SSSSS' }); const d = how === 'port' ? -60 : 90; P.own.th = norm(e.h0 + d); P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
+      // once she's past, resume course as a player would (otherwise you can end up running parallel with her for ever)
+      if (e?.bot && !e.resumed && P.ais[0] && cpaOf(P.own, P.ais[0]).tcpa < 0) { e.resumed = 1; P.own.th = e.h0; }
       wkTick(0.05); }
     const e = P.encs[0]; out[name] = { pts: e.pts, rogue: e.rogue, acted: !!e.bot, notes: e.notes.filter(n => n.p).map(n => n.p) };
   };
