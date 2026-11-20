@@ -11,6 +11,7 @@ const MISSIONS=[
  {id:'m5',name:'Fog',desc:'Radar and sound signals only.'},
  {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules.'},
  {id:'m7',name:'Endless',desc:'Survive as the traffic builds.'}];
+const HORN_WIN=8; // a manoeuvring signal counts if it's sounded within this many real seconds of the manoeuvre (Rule 34(a))
 const ENC_LABEL={headon:'Head-on',xstbd:'Crossing from starboard',xport:'Crossing from port',overtaking:'You overtaking',overtaken:'Being overtaken'};
 // Rule 18 traffic. rank: who keeps out of whose way (higher = more privileged); v: typical speed (kn).
 const WK_TYPES={power:{rank:0,v:null},sail:{rank:1,v:6,rule:'Rule 18(a)(iv)',look:'Under sail'},fishing:{rank:2,v:4,rule:'Rule 18(a)(iii)',look:'Shapes: two cones, points together'},
@@ -40,7 +41,7 @@ function wkOpen(){
 }
 function wkStart(m){
   const wp=m.wps[0],h0=Math.round(brg({x:0,y:0},{x:wp[0],y:wp[1]}));
-  P={m,own:{x:0,y:0,h:h0,th:h0,v:12,tv:12,tele:4,trail:[]},ais:[],encs:[],wpi:0,score:0,hull:3,time:0,horn:[],spawnI:0,lastSpawn:-8,
+  P={m,own:{x:0,y:0,h:h0,th:h0,v:12,tv:12,tele:4,trail:[]},ais:[],encs:[],wpi:0,score:0,hull:3,time:0,horn:[],turns:[],refTh:h0,spawnI:0,lastSpawn:-8,
      sel:null,range:3,hints:$('pHints').checked,paused:false,over:false,nid:0,toasts:[],trailT:0};
   $('pTitle').textContent=`${MISSIONS.indexOf(m)+1} · ${m.name}`;$('pPause').textContent='⏸';
   $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}">${x.l}</button>`).join('');
@@ -68,7 +69,7 @@ function spawnAI(kind){
 }
 function newEnc(a){
   const o=P.own,c=cpaOf(o,a);
-  P.encs.push({id:a.id,name:a.name,vt:wkType(a),cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false});
+  P.encs.push({id:a.id,name:a.name,vt:wkType(a),cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false,t0:P.time,asternT:null});
 }
 function turnTo(b,rate,dt){const d=norm(b.th-b.h),r=rate*dt;b.h=norm(b.h+(Math.abs(d)<r?d:Math.sign(d)*r));}
 function aiTick(a,dt){
@@ -101,6 +102,7 @@ function encTick(a,c){
     if(!e.dir&&Math.abs(dho)>=10){e.dir=Math.sign(dho);e.dirT=P.time;
       if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)wkToast('✗ Rule 14: head-on, turn to STARBOARD','bad');
       if(e.cl.type==='xstbd'&&e.dir<0)wkToast('✗ Rule 15: turn to starboard and pass astern of her','bad');}
+    if(o.tv<0&&e.asternT===null)e.asternT=P.time;
     if(!e.act&&(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)))e.act={range:c.range,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};
     if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){e.standBreak=true;wkToast('✗ Rule 17(a): you are stand-on — hold course and speed','bad');}
   }
@@ -114,7 +116,7 @@ function encTick(a,c){
   if((c.tcpa<0&&c.range>1.0)||c.range>5)wkGrade(e);
 }
 function wkGrade(e){
-  if(e.done)return;e.done=true;const N=e.notes;let pts=0;
+  if(e.done)return;e.done=true;e.doneT=P.time;const N=e.notes;let pts=0;
   const add=(p,ok,txt,fix)=>{pts+=p;N.push({ok,txt,p,fix});};
   if(e.collided)add(-200,false,'Collision','Act earlier and make a bigger change of course or speed.');
   if(e.hintCost)N.push({ok:null,txt:'You used a hint (−20, already taken)',p:0});
@@ -138,10 +140,23 @@ function wkGrade(e){
   }
   if(!e.collided){if(e.minR<0.2)add(-50,false,`Close quarters: passed only ${e.minR.toFixed(2)} nm off`,'Make a bigger alteration (or slow more) so you pass at least 0.5 nm clear.');
     else if(e.minR>=0.4)add(25,true,`Safe passing distance (${e.minR.toFixed(2)} nm)`);}
-  if(e.dir&&e.cl.role==='give'){const want=e.dir>0?'S':'SS',hit=P.horn.find(x=>Math.abs(x.t-e.dirT)<=8&&x.p===want);
-    if(hit)add(15,true,`Correct sound signal ${patHTML(want)} (Rule 34)`);
-    else N.push({ok:null,txt:`No sound signal: give ${patHTML(want)} when you alter ${want==='S'?'to starboard':'to port'} in sight of another ship (Rule 34)`,p:0});}
+  hornGrade(e,add);
   e.pts=pts;P.score+=pts;showResult(e);
+}
+// Rule 34(a): manoeuvring signals while in sight. • = altering to starboard, • • = altering to port, • • • = operating astern propulsion.
+function hornGrade(e,add){
+  const near=(t,p)=>P.horn.find(h=>h.p===p&&Math.abs(h.t-t)<=HORN_WIN),used=new Set();
+  if(e.dir){const want=e.dir>0?'S':'SS',wrong=e.dir>0?'SS':'S',side=e.dir>0?'to starboard':'to port',hit=near(e.dirT,want),bad=!hit&&near(e.dirT,wrong);
+    if(hit){used.add(hit);add(15,true,`Correct sound signal ${patHTML(want)} as you altered ${side} (Rule 34(a))`);}
+    else if(bad){used.add(bad);add(-20,false,`Wrong sound signal: ${patHTML(wrong)} means the opposite of your turn ${side} (Rule 34(a))`,`${want==='S'?'One short blast':'Two short blasts'} = "I am altering my course ${side}". A wrong signal misleads the other ship.`);}
+    else add(-10,false,`No sound signal as you altered ${side} (Rule 34(a))`,`In sight of another ship, sound ${want==='S'?'one short blast as you turn to starboard':'two short blasts as you turn to port'}.`);}
+  if(e.asternT!==null){const hit=near(e.asternT,'SSS');
+    if(hit){used.add(hit);add(10,true,`Correct sound signal ${patHTML('SSS')} when going astern (Rule 34(a))`);}
+    else add(-10,false,`No sound signal when going astern (Rule 34(a))`,'Three short blasts = "I am operating astern propulsion". Sound it as you put the engine astern.');}
+  // signals that don't match anything you did mislead the other ship
+  const done=e.doneT??P.time,stray=P.horn.filter(h=>['S','SS','SSS'].includes(h.p)&&h.t>=e.t0&&h.t<=done&&!used.has(h)&&
+    !(h.p==='SSS'?(e.asternT!==null&&Math.abs(h.t-e.asternT)<=HORN_WIN):P.turns.some(x=>x.d===(h.p==='S'?1:-1)&&Math.abs(x.t-h.t)<=HORN_WIN)));
+  if(stray.length)add(-15,false,`Sound signal with no matching manoeuvre: ${stray.map(h=>patHTML(h.p)).join(', ')} (Rule 34(a))`,'Manoeuvring signals say what you are doing right now. Only sound one when you actually alter course or go astern.');
 }
 const encTitle=e=>ENC_LABEL[e.cl.type]+(e.vt!=='power'?' · '+TYPE_LABEL[e.vt]:'');
 function showResult(e){
@@ -156,6 +171,7 @@ function showResult(e){
 }
 function wkTick(dt){
   const o=P.own;P.time+=dt;
+  const dth=norm(o.th-P.refTh);if(Math.abs(dth)>=10){P.turns.push({t:P.time,d:Math.sign(dth)});P.refTh=o.th;}
   turnTo(o,3+15*Math.min(1,Math.abs(o.v)/12),dt);
   const dv=o.tv-o.v,acc=1.2*dt;o.v+=Math.abs(dv)<acc?dv:Math.sign(dv)*acc;
   const ve=pvel(o);o.x+=ve.x*dt;o.y+=ve.y*dt;

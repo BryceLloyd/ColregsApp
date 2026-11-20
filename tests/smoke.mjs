@@ -100,6 +100,26 @@ const r18 = await page.evaluate(() => {
 });
 ok(r18.wrong.length === 0 && r18.bad.length === 0, `watchkeeper Rule 18: sail, fishing, NUC, RAM and CBD all handled ${r18.wrong.concat(r18.bad).join(', ')}`);
 
+// 6. Horn scoring (Rule 34(a)): correct, missing, wrong, stray and astern signals.
+const horn = await page.evaluate(() => {
+  const keep = MISSIONS[0].enc, out = {};
+  const run = (name, th, tv, horns) => {
+    MISSIONS[0].enc = ['xstbd']; wkStart(MISSIONS[0]); let e = null;
+    for (let i = 0; i < 20000 && !P.encs[0]?.done; i++) {
+      e = P.encs[0];
+      if (e?.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + th); P.own.tv = tv; for (const p of horns) P.horn.push({ t: P.time, p }); }
+      wkTick(0.05);
+    }
+    out[name] = P.encs[0].notes.filter(n => /signal/i.test(n.txt)).map(n => n.p);
+  };
+  run('correct', 50, 12, ['S']); run('missing', 50, 12, []); run('wrong', 50, 12, ['SS']); run('stray', 50, 12, ['S', 'SSS']);
+  run('astern', 0, -4, ['SSS']); run('asternMissing', 0, -4, []);
+  MISSIONS[0].enc = keep; return out;
+});
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+ok(same(horn.correct, [15]) && same(horn.missing, [-10]) && same(horn.wrong, [-20]) && same(horn.stray, [15, -15]) && same(horn.astern, [10]) && same(horn.asternMissing, [-10]),
+  `horn scoring: correct +15, missing −10, wrong −20, stray −15, astern +10/−10 ${JSON.stringify(horn)}`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
