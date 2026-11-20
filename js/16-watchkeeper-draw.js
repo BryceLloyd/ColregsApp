@@ -1,5 +1,19 @@
 // Watchkeeper chart rendering and HUD updates.
 // ---------- drawing ----------
+// Rule 18 day shapes, drawn upright beside the ship on a patch of sky so they're readable on a phone.
+function wkShapes(c,type,x,y){
+  const S={nuc:['ball','ball'],ram:['ball','diamond','ball'],cbd:['cyl'],fishing:['coneD','coneU']}[type];if(!S)return;
+  const g=9,top=y-(S.length-1)*g/2,hh=(S.length-1)*g+16;
+  c.fillStyle='#dcebf5';c.beginPath();c.roundRect(x-7,top-8,14,hh,4);c.fill();c.strokeStyle='#0b2340';c.lineWidth=1;c.stroke();
+  c.strokeStyle='#555';c.lineWidth=1;c.beginPath();c.moveTo(x,top-6);c.lineTo(x,top+hh-10);c.stroke();
+  S.forEach((k,i)=>{const cy=top+i*g;c.beginPath();
+    if(k==='ball')c.arc(x,cy,3.4,0,7);
+    else if(k==='diamond'){c.moveTo(x,cy-4);c.lineTo(x+3.4,cy);c.lineTo(x,cy+4);c.lineTo(x-3.4,cy);c.closePath();}
+    else if(k==='cyl')c.rect(x-2.8,cy-5,5.6,10);
+    else if(k==='coneD'){c.moveTo(x-3.6,cy-3.6);c.lineTo(x+3.6,cy-3.6);c.lineTo(x,cy+3.6);c.closePath();}
+    else {c.moveTo(x,cy-3.6);c.lineTo(x+3.6,cy+3.6);c.lineTo(x-3.6,cy+3.6);c.closePath();}
+    c.fillStyle='#111';c.fill();});
+}
 function wkDraw(){
   if(!pctx)return;const c=pctx,o=P.own,k=(PH*0.6)/P.range,cy0=PH*0.66,ang=o.h*D2R,ca=Math.cos(ang),sa=Math.sin(ang);
   const S2=p=>{const dx=p.x-o.x,dy=p.y-o.y;return{x:PW/2+(dx*ca-dy*sa)*k,y:cy0-(dx*sa+dy*ca)*k};};
@@ -26,8 +40,13 @@ function wkDraw(){
     const vk=b.v*KN*WK_TS*0+b.v*(3/60);// 3-minute vector (nm)
     const e2=S2({x:b.x+Math.sin(b.h*D2R)*vk,y:b.y+Math.cos(b.h*D2R)*vk});
     c.strokeStyle=isOwn?'rgba(160,210,255,.9)':'rgba(255,190,140,.9)';c.lineWidth=1.5;c.beginPath();c.moveTo(s.x,s.y);c.lineTo(e2.x,e2.y);c.stroke();
-    c.save();c.translate(s.x,s.y);c.rotate((b.h-o.h)*D2R);c.beginPath();c.moveTo(0,-11);c.quadraticCurveTo(6,-4,5,9);c.lineTo(-5,9);c.quadraticCurveTo(-6,-4,0,-11);c.closePath();
-    c.fillStyle=col;c.fill();c.strokeStyle='#0b2340';c.lineWidth=1;c.stroke();c.fillStyle='#f2f2f2';c.fillRect(-3,1,6,4);c.restore();return s;};
+    c.save();c.translate(s.x,s.y);c.rotate((b.h-o.h)*D2R);
+    if(b.type==='fishing'){c.strokeStyle='rgba(255,255,255,.75)';c.setLineDash([3,3]);c.lineWidth=1;c.beginPath();c.moveTo(-3,9);c.lineTo(-7,28);c.lineTo(7,28);c.lineTo(3,9);c.stroke();c.setLineDash([]);}
+    c.beginPath();c.moveTo(0,-11);c.quadraticCurveTo(6,-4,5,9);c.lineTo(-5,9);c.quadraticCurveTo(-6,-4,0,-11);c.closePath();
+    c.fillStyle=col;c.fill();c.strokeStyle='#0b2340';c.lineWidth=1;c.stroke();
+    if(b.type==='sail'){c.fillStyle='#fff';c.beginPath();c.moveTo(0,-7);c.lineTo(7,7);c.lineTo(0,7);c.closePath();c.fill();c.strokeStyle='#333';c.beginPath();c.moveTo(0,-7);c.lineTo(0,7);c.stroke();}
+    else{c.fillStyle='#f2f2f2';c.fillRect(-3,1,6,4);}
+    c.restore();if(!isOwn)wkShapes(c,b.type,s.x+31,s.y-4);return s;};
   for(const a of P.ais){const s=ship(a,'#e8742c',false);c.fillStyle='#fff';c.font='10.5px sans-serif';c.textAlign='center';c.fillText(a.name,s.x,s.y+22);
     const e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);if(e){c.strokeStyle='rgba(255,90,90,.9)';c.lineWidth=1.5;c.beginPath();c.arc(s.x,s.y,16,0,7);c.stroke();}
     if(P.sel===a.id){c.strokeStyle='#ffd98a';c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.arc(s.x,s.y,20,0,7);c.stroke();c.setLineDash([]);}}
@@ -54,7 +73,7 @@ function wkUI(){
   else{card.style.display='block';const c=cpaOf(o,a),bb=(brg(o,a)+360)%360;
     let trend='—';if(a.bh.length>3){const db=norm(a.bh[a.bh.length-1].b-a.bh[0].b);trend=Math.abs(db)<1.2?(cpaOf(o,a).tcpa>0?'<span style="color:#ff9a9a">steady ⚠</span>':'steady (opening)'):db>0?'drawing right':'drawing left';}
     const risk=c.cpa<0.4&&c.tcpa>0&&c.range<3.5,e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);
-    card.innerHTML=`<b>${a.name} · power</b><br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
+    card.innerHTML=`<b>${a.name}</b> · ${WK_TYPES[wkType(a)].look||'No day shapes'}<br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
       (c.tcpa>0?`CPA ${c.cpa.toFixed(2)} nm in ${Math.max(0,c.tcpa*WK_TS/60).toFixed(1)} min`:'Opening — past CPA')+
       (risk?`<br><span style="color:#ff9a9a;font-weight:700">Risk of collision</span>`:'');}
   // hint bar

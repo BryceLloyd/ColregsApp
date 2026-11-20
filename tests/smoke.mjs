@@ -71,6 +71,35 @@ const back = await page.evaluate(() => {
 ok(back.over && back.hull === 3 && back.spawned === back.of && back.dropPts > 0 && back.again === 2,
   `watchkeeper drop-back: mission ends, ${back.spawned}/${back.of} ships spawned, drop-back scored ${back.dropPts}, re-encounter when passing later`);
 
+// 5. Rule 18 in Watchkeeper: you keep out of the way of special vessels (Rule 13 still wins when you overtake),
+//    and a rule-following bot handles every type without mistakes.
+const r18 = await page.evaluate(() => {
+  const me = { x: 0, y: 0, h: 0, v: 12 }, wrong = [];
+  for (const t of R18_POOL) {
+    const port = classify(me, { type: t, x: -1, y: 1, h: 90, v: 5 }), head = classify(me, { type: t, x: 0, y: 2, h: 180, v: 5 }),
+      ahead = classify(me, { type: t, x: 0, y: 1, h: 0, v: 3 }), they = classify({ type: t, x: -1, y: 1, h: 90, v: 5 }, me);
+    if (port.role !== 'give' || !port.r18) wrong.push(t + ' crossing from port');
+    if (head.role !== 'give' || !head.r18) wrong.push(t + ' head-on');
+    if (ahead.type !== 'overtaking' || ahead.rule !== 'Rule 13') wrong.push(t + ' overtaking');
+    if (they.role !== 'stand') wrong.push(t + ' (her view)');
+  }
+  const keep = MISSIONS[0].enc, runs = [];
+  for (const t of R18_POOL) {
+    MISSIONS[0].enc = ['xport:' + t, 'headon:' + t];
+    wkStart(MISSIONS[0]);
+    for (let i = 0; i < 20000 && !P.over; i++) {
+      const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
+      if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { o.th = norm(e.h0 + 50); e.bot = 1; P.horn.push({ t: P.time, p: 'S' }); } }
+      else { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+      wkTick(0.05);
+    }
+    runs.push({ t, n: P.encs.length, ok: P.hull === 3 && P.encs.every(e => e.cl.r18 && e.cl.role === 'give' && e.vt === t && !e.notes.some(n => n.ok === false)) });
+  }
+  MISSIONS[0].enc = keep;
+  return { wrong, bad: runs.filter(r => !r.ok || r.n !== 2).map(r => r.t) };
+});
+ok(r18.wrong.length === 0 && r18.bad.length === 0, `watchkeeper Rule 18: sail, fishing, NUC, RAM and CBD all handled ${r18.wrong.concat(r18.bad).join(', ')}`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }

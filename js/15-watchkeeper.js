@@ -4,7 +4,7 @@ const REGION='A';               // IALA buoyage region used as the standard
 const WK_TS=20, KN=WK_TS/3600;  // knots -> nm per real second at 20x
 const TELE=[{l:'Astern',v:-4},{l:'Stop',v:0},{l:'Slow',v:4},{l:'Half',v:8},{l:'Full',v:12}];
 const MISSIONS=[
- {id:'m1',name:'Open water',desc:'Daylight, light traffic: head-on, crossing and overtaking encounters with other power-driven vessels.',wps:[[0.6,5],[3.6,8.6],[3.0,13.2],[6.4,16.4]],enc:['xstbd','headon','xport','overtaking','overtaken','xstbd','headon'],par:310,ready:true},
+ {id:'m1',name:'Open water',desc:'Daylight, light traffic: head-on, crossing and overtaking encounters. Watch for day shapes (Rule 18).',wps:[[0.6,5],[3.6,8.6],[3.0,13.2],[6.4,16.4]],enc:['xstbd','headon','xport','overtaking','xport:r18','overtaken','headon:r18'],par:310,ready:true},
  {id:'m2',name:'Busy crossing',desc:'More traffic and mixed vessel types (Rule 18).'},
  {id:'m3',name:'Harbour channel',desc:'A buoyed channel, IALA Region A.'},
  {id:'m4',name:'Night passage',desc:'Lights only.'},
@@ -12,6 +12,11 @@ const MISSIONS=[
  {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules.'},
  {id:'m7',name:'Endless',desc:'Survive as the traffic builds.'}];
 const ENC_LABEL={headon:'Head-on',xstbd:'Crossing from starboard',xport:'Crossing from port',overtaking:'You overtaking',overtaken:'Being overtaken'};
+// Rule 18 traffic. rank: who keeps out of whose way (higher = more privileged); v: typical speed (kn).
+const WK_TYPES={power:{rank:0,v:null},sail:{rank:1,v:6,rule:'Rule 18(a)(iv)',look:'Under sail'},fishing:{rank:2,v:4,rule:'Rule 18(a)(iii)',look:'Shapes: two cones, points together'},
+  cbd:{rank:3,v:10,rule:'Rule 18(d)(i)',look:'Shape: a cylinder'},ram:{rank:4,v:5,rule:'Rule 18(a)(ii)',look:'Shapes: ball, diamond, ball'},nuc:{rank:4,v:3,rule:'Rule 18(a)(i)',look:'Shapes: two black balls'}};
+const R18_POOL=['sail','fishing','nuc','ram','cbd'];
+const wkType=b=>WK_TYPES[b.type]?b.type:'power';
 let P=null,pctx=null,PW=360,PH=400;
 const pvel=b=>vel(b.h,b.v*KN);
 function cpaOf(a,b){const px=b.x-a.x,py=b.y-a.y,va=pvel(a),vb=pvel(b),wx=vb.x-va.x,wy=vb.y-va.y,w2=wx*wx+wy*wy;
@@ -20,6 +25,8 @@ function classify(me,tg){
   const rb=norm(brg(me,tg)-me.h),a=norm(brg(tg,me)-tg.h);
   if(Math.abs(rb)>112.5&&tg.v>me.v)return{type:'overtaken',role:'stand',rule:'Rules 13 & 17'};
   if(Math.abs(a)>112.5&&me.v>tg.v)return{type:'overtaking',role:'give',rule:'Rule 13'};
+  const geo=Math.abs(rb)<10&&Math.abs(a)<10?'headon':rb>0?'xstbd':'xport',rm=WK_TYPES[wkType(me)].rank,rt=WK_TYPES[wkType(tg)].rank;
+  if(rm!==rt){const hi=rt>rm?tg:me;return{type:geo,role:rt>rm?'give':'stand',rule:WK_TYPES[wkType(hi)].rule,r18:true};}
   if(Math.abs(rb)<10&&Math.abs(a)<10)return{type:'headon',role:'give',rule:'Rule 14'};
   if(rb>0)return{type:'xstbd',role:'give',rule:'Rule 15'};
   return{type:'xport',role:'stand',rule:'Rule 17'};
@@ -46,6 +53,7 @@ window.addEventListener('resize',()=>{if(view==='play')wkResize();});
 function wkToast(txt,cls){if(!P)return;P.toasts.push({txt,cls,t:P.time});if(P.toasts.length>3)P.toasts.shift();renderToasts();}
 function renderToasts(){$('pToast').innerHTML=P.toasts.map(x=>`<div class="ptoast ${x.cls}">${esc(x.txt)}</div>`).join('');}
 function spawnAI(kind){
+  let [geo,ty]=kind.split(':');ty=ty==='r18'?R18_POOL[Math.floor(Math.random()*R18_POOL.length)]:ty||'power';kind=geo;
   const o=P.own,T=20,sp=Math.max(o.v,6)*KN,M={x:o.x+Math.sin(o.h*D2R)*sp*T,y:o.y+Math.cos(o.h*D2R)*sp*T};
   let h,v,x,y;const lat=(d)=>({x:Math.cos(o.h*D2R)*d,y:-Math.sin(o.h*D2R)*d});
   if(kind==='overtaking'){h=o.h;v=4;const l=lat(0.04);x=o.x+Math.sin(o.h*D2R)*1.4+l.x;y=o.y+Math.cos(o.h*D2R)*1.4+l.y;}
@@ -53,13 +61,14 @@ function spawnAI(kind){
   else{if(kind==='headon'){h=norm(o.h+180+(Math.random()*6-3));v=9+Math.random()*4;}
     else if(kind==='xstbd'){h=norm(o.h-90+(Math.random()*50-25));v=8+Math.random()*6;}
     else{h=norm(o.h+90+(Math.random()*50-25));v=8+Math.random()*6;}
+    if(WK_TYPES[ty].v)v=WK_TYPES[ty].v;
     const ve=vel(h,v*KN);x=M.x-ve.x*T;y=M.y-ve.y*T;}
-  P.nid++;const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:'power',x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[]};P.ais.push(a);
+  P.nid++;const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:ty,x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[]};P.ais.push(a);
   newEnc(a);
 }
 function newEnc(a){
   const o=P.own,c=cpaOf(o,a);
-  P.encs.push({id:a.id,name:a.name,cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false});
+  P.encs.push({id:a.id,name:a.name,vt:wkType(a),cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false});
 }
 function turnTo(b,rate,dt){const d=norm(b.th-b.h),r=rate*dt;b.h=norm(b.h+(Math.abs(d)<r?d:Math.sign(d)*r));}
 function aiTick(a,dt){
@@ -67,7 +76,7 @@ function aiTick(a,dt){
   if(a.state==='cruise'&&risk&&c.range<2.2){
     if(cl.role==='give'){if(cl.type==='overtaking'){const rb=norm(brg(a,P.own)-a.h);a.th=norm(a.h0+(rb>0?-25:25));}else a.th=norm(a.h0+(cl.type==='headon'?30:45));a.state='avoid';}
     else a.state='stand';}
-  if(a.state==='stand'&&c.cpa<0.08&&c.range<0.35&&c.tcpa>0){a.th=norm(a.h0+60);a.state='avoid';}
+  if(a.state==='stand'&&c.cpa<0.08&&c.range<0.35&&c.tcpa>0&&a.type!=='nuc'&&a.type!=='ram'){a.th=norm(a.h0+60);a.state='avoid';}
   if(a.state==='avoid'&&c.tcpa<0&&c.range>0.8){a.th=a.h0;a.state='resume';}
   turnTo(a,10,dt);const ve=pvel(a);a.x+=ve.x*dt;a.y+=ve.y*dt;
   a.bh.push({t:P.time,b:brg(P.own,a)});while(a.bh.length&&P.time-a.bh[0].t>2.5)a.bh.shift();
@@ -75,6 +84,7 @@ function aiTick(a,dt){
 function encAlert(e){return `⚠ Risk of collision with ${e.name}: bearing steady, range closing. Your move.`;}
 function encHint(e){
   const n=e.name;
+  if(e.cl.r18)return `${n} is a ${TYPE_LABEL[e.vt].toLowerCase()}: a power-driven vessel keeps out of her way (${e.cl.rule}), whatever the crossing or head-on rules say. Act early and boldly.`;
   return {headon:`Head-on with ${n}: both turn to STARBOARD (Rule 14).`,xstbd:`${n} is crossing from starboard: you give way (Rule 15). Act early and boldly.`,
     xport:`${n} is crossing from port: you stand on. Hold course and speed (Rule 17).`,overtaking:`You're overtaking ${n}: keep well clear, either side (Rule 13).`,
     overtaken:`${n} is overtaking you: hold course and speed (Rules 13 & 17).`}[e.cl.type];
@@ -89,7 +99,7 @@ function encTick(a,c){
   const dho=norm(o.th-e.h0); // ordered course change since the encounter began
   if(before){
     if(!e.dir&&Math.abs(dho)>=10){e.dir=Math.sign(dho);e.dirT=P.time;
-      if(e.cl.type==='headon'&&e.dir<0)wkToast('✗ Rule 14: head-on, turn to STARBOARD','bad');
+      if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)wkToast('✗ Rule 14: head-on, turn to STARBOARD','bad');
       if(e.cl.type==='xstbd'&&e.dir<0)wkToast('✗ Rule 15: turn to starboard and pass astern of her','bad');}
     if(!e.act&&(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)))e.act={range:c.range,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};
     if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){e.standBreak=true;wkToast('✗ Rule 17(a): you are stand-on — hold course and speed','bad');}
@@ -108,15 +118,17 @@ function wkGrade(e){
   const add=(p,ok,txt,fix)=>{pts+=p;N.push({ok,txt,p,fix});};
   if(e.collided)add(-200,false,'Collision','Act earlier and make a bigger change of course or speed.');
   if(e.hintCost)N.push({ok:null,txt:'You used a hint (−20, already taken)',p:0});
+  if(e.cl.r18)N.push({ok:null,txt:`${WK_TYPES[e.vt].look} = ${TYPE_LABEL[e.vt].toLowerCase()}. ${e.cl.rule} puts her above a power-driven vessel, so ${e.cl.type==='headon'?'Rule 14 (head-on) didn\'t apply':'the crossing rule didn\'t apply'}: you keep out of her way.`,p:0});
   if(e.cl.role==='give'){
     if(!e.act)add(-100,false,`No substantial action taken (${e.cl.rule} & Rule 16)`,
+      e.cl.r18?`She was a ${TYPE_LABEL[e.vt].toLowerCase()}. Keep out of her way: alter boldly (30° or more) or slow right down, early.`:
       e.cl.type==='headon'?'Head-on: turn boldly to starboard (30° or more) as soon as you see her ahead with a steady bearing.':
       e.cl.type==='overtaking'?'When overtaking, alter course well before you close: 30° or more to either side.':
       'You were give-way: alter 30° or more to starboard to pass astern of her, or cut your speed by half or more — early.');
     else if(e.act.tg>=5)add(100,true,`Early, substantial action ${Math.round(e.act.tg)} min before CPA, by ${e.act.by} (Rules 8 & 16)`);
     else if(e.act.tg>=2.5)add(40,true,`Action ${e.act.tg.toFixed(1)} min before CPA (Rule 8)`,'Good, but act as soon as the bearing is steady: aim for 5+ minutes before CPA.');
     else add(-50,false,`Action left late: only ${Math.max(0,e.act.tg).toFixed(1)} min before CPA (Rule 8)`,'Act as soon as you see the bearing is steady and the range closing. Aim for 5+ minutes before CPA.');
-    if(e.cl.type==='headon'&&e.dir<0)add(-75,false,'Turned to port in a head-on situation (Rule 14)','Head-on, both ships turn to starboard and pass port to port.');
+    if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)add(-75,false,'Turned to port in a head-on situation (Rule 14)','Head-on, both ships turn to starboard and pass port to port.');
     if(e.cl.type==='xstbd'&&e.dir<0&&!e.crossed)add(-40,false,'Turned to port for a ship on your starboard side (Rule 15)','Turn to starboard so you pass astern of her. A port turn heads across her bow.');
     if(e.crossed)add(-75,false,'Crossed ahead of the stand-on vessel (Rule 15)','Always pass astern of the ship on your starboard side. Never cut across her bow.');
     if(e.droppedBack)add(0,true,'Dropped back and stayed astern of her: that keeps clear (Rules 8(e) & 13)');
@@ -131,9 +143,10 @@ function wkGrade(e){
     else N.push({ok:null,txt:`No sound signal: give ${patHTML(want)} when you alter ${want==='S'?'to starboard':'to port'} in sight of another ship (Rule 34)`,p:0});}
   e.pts=pts;P.score+=pts;showResult(e);
 }
+const encTitle=e=>ENC_LABEL[e.cl.type]+(e.vt!=='power'?' · '+TYPE_LABEL[e.vt]:'');
 function showResult(e){
   const bad=e.notes.some(n=>n.ok===false),el=$('pResult');
-  el.innerHTML=`<div class="rh"><b>${bad?'❌':'✅'} ${esc(e.name)} · ${ENC_LABEL[e.cl.type]}</b><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></div>
+  el.innerHTML=`<div class="rh"><b>${bad?'❌':'✅'} ${esc(e.name)} · ${encTitle(e)}</b><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></div>
     <div class="small">You were the ${e.cl.role==='give'?'give-way':'stand-on'} vessel (${e.cl.rule}).</div>
     <ul>${e.notes.map(n=>`<li class="${n.ok===true?'g':n.ok===false?'b':'t'}">${n.ok===true?'✓':n.ok===false?'✗':'💡'} ${n.txt}${n.p?` (${n.p>0?'+':''}${n.p})`:''}${n.fix?`<div class="fix">➜ ${esc(n.fix)}</div>`:''}</li>`).join('')}</ul>`+
     (bad?'<button class="btn" id="pResGo">Got it — continue ▶</button>':'');
@@ -150,7 +163,10 @@ function wkTick(dt){
   for(const a of P.ais){aiTick(a,dt);encTick(a,cpaOf(o,a));}
   P.ais=P.ais.filter(a=>{if(a.dead)return false;const c=cpaOf(o,a);return !(c.range>6&&c.tcpa<0);});
   // spawn
-  const m=P.m,active=P.encs.some(e=>!e.done),near=P.ais.some(a=>{const c=cpaOf(o,a);if(c.tcpa<=0&&P.encs.findLast(e=>e.id===a.id)?.droppedBack)return false;return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
+  const m=P.m,active=P.encs.some(e=>!e.done),near=P.ais.some(a=>{const c=cpaOf(o,a),le=P.encs.findLast(e=>e.id===a.id);
+    if(c.tcpa<=0&&le?.droppedBack)return false;
+    if(le?.done&&(c.tcpa<=0||c.cpa>=1)&&c.range>=0.8)return false; // dealt with and passing well clear: doesn't hold up new traffic
+    return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
   const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0;
   if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>3&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){spawnAI(m.enc[P.spawnI++]);P.lastSpawn=P.time;}
   // waypoints
@@ -169,7 +185,7 @@ function wkEnd(ok){
   $('dbSub').textContent=`${P.m.name} · ${gclock(P.time)} at sea · hull ${'❤️'.repeat(Math.max(0,P.hull))}${ok?` · bonus +${bonus}`:''}`;
   const good=P.encs.filter(e=>e.pts>=60).length;
   $('dbList').innerHTML=`<p class="small" style="margin:4px 2px 8px">${P.encs.length} encounters · ${good} handled well. Here's how each one went:</p>`+
-    P.encs.map(e=>`<div class="enc"><h4><span>${e.pts>=60?'✅':e.pts>=0?'⚠️':'❌'} ${esc(e.name)} · ${ENC_LABEL[e.cl.type]}</span><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></h4>
+    P.encs.map(e=>`<div class="enc"><h4><span>${e.pts>=60?'✅':e.pts>=0?'⚠️':'❌'} ${esc(e.name)} · ${encTitle(e)}</span><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></h4>
       <div class="small" style="margin-bottom:4px">You were the ${e.cl.role==='give'?'give-way':'stand-on'} vessel (${e.cl.rule}).</div>
       <ul>${e.notes.map(n=>`<li style="color:${n.ok===true?'#bfeccd':n.ok===false?'#ffb3b3':'#e8d9a8'}">${n.ok===true?'✓':n.ok===false?'✗':'💡'} ${n.txt}${n.p?` (${n.p>0?'+':''}${n.p})`:''}${n.fix?`<div class="fix">➜ ${esc(n.fix)}</div>`:''}</li>`).join('')}</ul></div>`).join('');
   openOv('ovDebrief');

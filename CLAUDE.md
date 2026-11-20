@@ -29,6 +29,8 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
   - `encTick` and `wkGrade` are the referee. An encounter is created when a ship spawns, and its baseline is your ordered course and speed at that moment.
   - Only actions taken before CPA count. Actions count from the moment they're ordered.
   - Overtaking: slowing to her speed or less and not closing for 3 s closes the encounter as kept clear (`droppedBack`). If you later close in on her again, one new encounter opens for that ship.
+  - Rule 18: `WK_TYPES` gives each vessel type a `rank` (who keeps out of whose way), speed, rule and day-shape description. `classify` applies Rule 13 first, then Rule 18 between different ranks (`cl.r18`), then Rules 14/15/17 between power-driven vessels. Mission encounters can carry a type: `'xport:fishing'`, or `'xport:r18'` for a random one from `R18_POOL`. The type is shown only by day shapes (chart and target card) and named after the encounter.
+  - Spawning waits until no ship is near. A ship whose encounter is done and that is past CPA or passing 1 nm+ clear doesn't count as near.
   - Time scale: `WK_TS = 20` (×20 real time).
 
 ## Content rules
@@ -51,7 +53,11 @@ GitHub Pages from the `Website-Dev` branch (root): https://brycelloyd.github.io/
 ## Roadmap
 Watchkeeper stages, in order:
 1. ✅ Engine, Mission 1, referee, result cards, debrief.
-2. Rule 18 vessel types (sail, fishing, NUC, RAM, CBD) in traffic; horn scoring; Mission 2 (Busy crossing); Mission 6 (Rogue ships that ignore the rules, to test Rule 17(a)(ii)/(b) and five short blasts).
+2. Rule 18 and more traffic, in parts:
+   - 2a ✅ Rule 18 vessel types (sail, fishing, NUC, RAM, CBD) with day shapes; two of Mission 1's ships are special.
+   - 2b Horn scoring (Rule 34).
+   - 2c Mission 2 (Busy crossing).
+   - 2d Mission 6 (Rogue ships that ignore the rules, to test Rule 17(a)(ii)/(b) and five short blasts).
 3. Mission 3: buoyed harbour channel (Region A), narrow-channel judging (Rule 9), grounding.
 4. Mission 4 (night: lights only, with a bridge view) and Mission 5 (fog: radar and sound signals, Rule 19).
 5. Endless mode and Watchkeeper leaderboards (Supabase).
