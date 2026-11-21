@@ -80,5 +80,6 @@ function endlessEnd(){
   const prev=bestOf('m7');let lvl=0;
   try{lvl=+localStorage.getItem('wkBestLevel')||0;if(P.score>prev)localStorage.setItem('wkBest_m7',P.score);if(P.level>lvl)localStorage.setItem('wkBestLevel',P.level);}catch(e){}
   $('dbHead').textContent=P.hull>0?'⚓ Watch ended':'⚓ Watch over: out of hearts';
-  $('dbSub').textContent=`Level ${P.level}${P.level>5?` (${endlessName(P.level).toLowerCase()})`:''} · ${P.spawnI} ship${P.spawnI===1?'':'s'} · ${gclock(P.time)} at sea${P.score>prev&&P.score>0?' · new best!':''}`;
+  const place=P.spawnI?recordWatch({nick:nick||'Sailor',score:P.score,level:P.level,ships:P.spawnI,t:Math.round(P.time),d:Date.now()}):0;recLast=place?wkRuns()[place-1]:null;
+  $('dbSub').textContent=`${place===1&&P.score>0?'🏆 Your best watch · ':place?`#${place} of your watches · `:''}Level ${P.level}${P.level>5?` (${endlessName(P.level).toLowerCase()})`:''} · ${P.spawnI} ship${P.spawnI===1?'':'s'} · ${gclock(P.time)} at sea`;
 }

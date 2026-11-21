@@ -111,7 +111,7 @@ function openRule(k){
 
 // ---- first launch, install hint, keeping your progress ----
 const PROG_KEYS=k=>/^(wkBest|colregs|wkPauseErr)/.test(k); // everything this app stores
-const hasProgress=()=>{try{return Object.keys(localStorage).some(k=>/^wkBest_|^colregsStudy$|^colregsLocalBoard$/.test(k));}catch(e){return false;}};
+const hasProgress=()=>{try{return Object.keys(localStorage).some(k=>/^wkBest|^colregsStudy$|^colregsLocalBoard$|^colregsMockRuns$/.test(k));}catch(e){return false;}};
 const flag=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k)==='1';localStorage.setItem(k,v?'1':'0');}catch(e){return false;}};
 const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const installed=()=>window.navigator.standalone===true||window.matchMedia?.('(display-mode: standalone)').matches;
