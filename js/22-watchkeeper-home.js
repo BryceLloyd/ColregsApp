@@ -32,7 +32,7 @@ const ENDLESS_LEVELS=[
   {name:'Two ships at once',pool:[['xstbd','xport'],['headon','xstbd:r18'],['xstbd:r18','xport']],gap:3},
   {name:'Some ships ignore the rules',pool:['xport?','overtaken?'],gap:2.5},
   {name:'Traffic builds',pool:[],gap:1.5}];
-const endlessLevel=()=>Math.min(1+Math.floor(P.encs.filter(e=>e.done).length/5),ENDLESS_LEVELS.length+3);
+const endlessLevel=()=>Math.min(1+Math.floor(P.encs.filter(e=>e.done&&!e.silent).length/5),ENDLESS_LEVELS.length+3);
 // The route: legs of 4.5–5.5 nm that wander up to 40° either side of north.
 function endlessWp(from){const h=(Math.random()*80-40)*D2R,d=4.5+Math.random();return [from[0]+Math.sin(h)*d,from[1]+Math.cos(h)*d];}
 function endlessSetup(m){const wps=[[0.6,5]];while(wps.length<4)wps.push(endlessWp(wps[wps.length-1]));
@@ -59,5 +59,5 @@ function endlessEnd(){
   const prev=bestOf('m7');let lvl=0;
   try{lvl=+localStorage.getItem('wkBestLevel')||0;if(P.score>prev)localStorage.setItem('wkBest_m7',P.score);if(P.level>lvl)localStorage.setItem('wkBestLevel',P.level);}catch(e){}
   $('dbHead').textContent='⚓ Watch over: out of hearts';
-  $('dbSub').textContent=`Level ${P.level} · ${P.encs.length} ships · ${gclock(P.time)} at sea${P.score>prev&&P.score>0?' · new best!':''}`;
+  $('dbSub').textContent=`Level ${P.level} · ${P.spawnI} ship${P.spawnI===1?'':'s'} · ${gclock(P.time)} at sea${P.score>prev&&P.score>0?' · new best!':''}`;
 }

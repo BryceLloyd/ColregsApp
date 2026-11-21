@@ -3,7 +3,7 @@
 const tfQ=(vis,stmt,truth,explain)=>({vis,prompt:stmt+' — true or false?',opts:[{h:'True',ok:truth},{h:'False',ok:!truth}],explain:(truth?'True. ':'False. ')+explain});
 const coin=()=>Math.random()<0.5;
 function tfGen(kind,topic){
-  if(kind==='lights'){const x=shuffle(LIGHTS)[0],tr=coin(),y=tr?x:shuffle(LIGHTS.filter(o=>o!==x))[0];
+  if(kind==='lights'){const x=shuffle(LIGHTS)[0],tr=coin(),y=tr?x:shuffle(LIGHTS.filter(o=>o!==x&&!lookAlike(o,x)))[0];
     return tfQ(`<div class="w">${lightSVG(x)}</div>`,`These lights show: ${y.s}`,tr,`They show: ${x.s}. ${x.note}`);}
   if(kind==='flags'){const f=shuffle(FLAGS)[0],tr=coin(),g=tr?f:shuffle(FLAGS.filter(o=>o!==f))[0];
     return tfQ(`<div class="w" style="width:42%">${flagSVG(f[0])}</div>`,`This flag means “${g[2]}”`,tr,`${f[0]} · ${f[1]}: ${f[2]}.`);}
@@ -30,7 +30,7 @@ function spotQ(k){const s=shuffle(SPOT.filter(x=>x.k===k))[0];let vis;
   else{buoyRegion='A';vis=`<div class="w" style="width:34%">${buoySVG(Object.assign({},BUOYS.find(x=>x.id===s.b.id),s.b),false)}</div>`;}
   return {vis,prompt:`This is meant to be ${s.claim}. What's wrong?`,opts:shuffle([s.a,...s.w]).map(t=>({h:esc(t),ok:t===s.a})),explain:s.e};}
 const ORDERQ=[
- {k:'rules',prompt:"Rule 18: put these in order, starting with the vessel everyone else keeps clear of.",items:["Not under command","Restricted in ability to manoeuvre","Constrained by draught","Fishing","Sailing","Power-driven"],explain:"NUC → RAM → CBD → fishing → sail → power. The less able she is to manoeuvre, the more others keep clear."},
+ {k:'rules',prompt:"Rule 18: put these in order, starting with the vessel everyone else keeps clear of.",items:["Not under command or restricted in ability to manoeuvre (equal)","Constrained by draught","Fishing","Sailing","Power-driven"],explain:"NUC = RAM → CBD → fishing → sail → power. The less able she is to manoeuvre, the more others keep clear."},
  {k:'rules',prompt:"You're the stand-on vessel and the give-way vessel isn't acting. Put your actions in order.",items:["Keep your course and speed","Sound at least five short blasts","You may act to avoid collision","You must take the best action to avoid collision"],explain:"Rule 17: hold on (a)(i) → warn with five short blasts (34(d)) → you MAY act (a)(ii) → you MUST act when she alone can't avoid collision (b)."},
  {k:'lights',prompt:"Put these light arcs in order, widest first.",items:["All-round light (360°)","Masthead light (225°)","Sternlight (135°)","Each sidelight (112.5°)"],explain:"360° → 225° → 135° → 112.5°."},
  {k:'buoys',prompt:"Put these cardinal lights in order of flashes per group, fewest first.",items:["East — Q(3)","South — Q(6) + long flash","West — Q(9)"],explain:"Clock face: east 3, south 6 (+ long), west 9. North flashes continuously."}

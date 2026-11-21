@@ -76,9 +76,9 @@ function makeVariant(i,lvl,noNight){
 function soundOpts(right,pool){return shuffle([right,...shuffle(pool.filter(p=>p!==right)).slice(0,3)]).map(p=>({h:`<span style="font-size:18px;letter-spacing:3px">${patHTML(p)}</span>`,ok:p===right}));}
 function followUp(V,k){
   if(V.fog){if(V.cat==='Restricted visibility')return {prompt:"Same fog. You're power-driven and making way. What fog signal should YOU be sounding?",opts:soundOpts('L',['L','LL','LSS','SSSSS']),explain:"One prolonged blast at intervals of not more than 2 minutes (Rule 35(a)). Stopped in the water: two prolonged."};return null;}
-  if(other.type==='buoy'||!V.correct.includes(k))return null;
+  if(other.type==='buoy'||!V.correct.includes(k)||(V.idx??SCEN.indexOf(V))===27)return null; // no risk of collision in 27: no doubt signal to ask about
   const P=['S','SS','SSS','SSSSS','L'];
-  if(k==='stand')return {prompt:"She's still closing and you doubt she's doing enough to keep clear. What do you sound?",opts:soundOpts('SSSSS',P),explain:"Five or more short, rapid blasts: 'I doubt you're taking sufficient action' (Rule 34(d)). Any vessel in sight may give it."};
+  if(k==='stand')return {prompt:"She's still closing and you doubt she's doing enough to keep clear. What do you sound?",opts:soundOpts('SSSSS',P),explain:"Five or more short, rapid blasts: 'I doubt you're taking sufficient action' (Rule 34(d)). A vessel in sight that's in doubt shall give it."};
   if(own.type!=='power')return null;
   if(k==='stbd')return {prompt:"You're altering course to starboard with her in sight. Which sound signal do you give?",opts:soundOpts('S',P),explain:"One short blast: 'I am altering my course to starboard' (Rule 34(a))."};
   if(k==='port')return {prompt:"You're altering course to port with her in sight. Which sound signal do you give?",opts:soundOpts('SS',P),explain:"Two short blasts: 'I am altering my course to port' (Rule 34(a))."};

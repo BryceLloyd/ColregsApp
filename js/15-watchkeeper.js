@@ -42,7 +42,7 @@ function classify(me,tg){
 function bestKey(m){return 'wkBest_'+m.id;}
 function wkOpen(){
   let h='';for(const m of MISSIONS){let best=null;try{best=localStorage.getItem(bestKey(m))}catch(e){}
-    h+=`<button class="tile mis" ${m.ready?'':'disabled'} data-m="${m.id}"><b>${MISSIONS.indexOf(m)+1} · ${esc(m.name)}</b><small>${esc(m.desc)}${m.ready?(best?` · Your best: ${best}`:''):' · Coming soon'}</small></button>`;}
+    h+=`<button class="tile mis" ${m.ready?'':'disabled'} data-m="${m.id}"><b>${MISSIONS.indexOf(m)+1} · ${esc(m.name)}</b><small>${esc(m.desc)}${m.ready?(best?` · Your best: ${+best}`:''):' · Coming soon'}</small></button>`;}
   $('pMissions').innerHTML=h;$('pMissions').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{closeOv('ovPlay');wkStart(MISSIONS.find(m=>m.id===b.dataset.m));});
   openOv('ovPlay');
 }
@@ -50,7 +50,7 @@ function wkStart(m){
   if(m.endless)m=endlessSetup(m);
   const wp=m.wps[0],h0=Math.round(brg({x:0,y:0},{x:wp[0],y:wp[1]}));
   P={m,own:{x:0,y:0,h:h0,th:h0,v:12,tv:12,tele:4,trail:[]},ais:[],encs:[],wpi:0,score:0,hull:3,time:0,horn:[],turns:[],refTh:h0,spawnI:0,lastSpawn:-8,
-     sel:null,range:3,hints:$('pHints').checked,paused:false,over:false,nid:0,toasts:[],trailT:0,pops:[],lastRes:null,mistakePause:false,booms:[]};$('pResult').style.display='none';
+     sel:null,range:3,hints:$('pHints').checked,paused:false,over:false,nid:0,toasts:[],trailT:0,pops:[],lastRes:null,mistakePause:false,booms:[],lateHits:[]};$('pResult').style.display='none';
   P.chan=chanInit(m);$('pHornChan').style.display=m.chan?'flex':'none';$('pBridge').style.display=m.night?'block':'none';
   P.fog=fogInit(m);$('pFog').style.display=m.fog?'flex':'none';fogUI();
   if(m.fog){P.own.v=P.own.tv=TELE[3].v;P.own.tele=3;P.lastSpawn=4;} // fog: start at half speed, with a moment before the first ship
@@ -76,7 +76,8 @@ function spawnAI(kind,T=20){
   let [geo,ty]=kind.split(':');ty=ty==='r18'?R18_POOL[Math.floor(Math.random()*R18_POOL.length)]:ty||'power';kind=geo;
   const o=P.own,sp=Math.max(o.v,6)*KN,V=wkView();
   let h,v,x,y;const lat=(d)=>({x:Math.cos(o.h*D2R)*d,y:-Math.sin(o.h*D2R)*d});
-  if(kind==='overtaking'){h=o.h;v=4;const l=lat(0.04),d=Math.max(1.4,V.ahead+0.25);x=o.x+Math.sin(o.h*D2R)*d+l.x;y=o.y+Math.cos(o.h*D2R)*d+l.y;}
+  if(kind==='overtaking'&&o.v<2)kind='headon'; // you're stopped: nothing to overtake
+  if(kind==='overtaking'){h=o.h;v=Math.min(4,o.v*0.45);const l=lat(0.04),d=Math.max(1.4,V.ahead+0.25);x=o.x+Math.sin(o.h*D2R)*d+l.x;y=o.y+Math.cos(o.h*D2R)*d+l.y;}
   else if(kind==='overtaken'){h=o.h;v=Math.max(o.v,6)+9;const l=lat(rogue?0:-0.05),d=Math.max(1.6,V.behind+0.25);x=o.x-Math.sin(o.h*D2R)*d+l.x;y=o.y-Math.cos(o.h*D2R)*d+l.y;}
   else{if(kind==='headon'){h=norm(o.h+180+(Math.random()*6-3));v=9+Math.random()*4;}
     else if(kind==='xstbd'){h=norm(o.h-90+(Math.random()*50-25));v=8+Math.random()*6;}
@@ -114,7 +115,7 @@ function encHint(e){
   if(e.cl.type==='chan')return `Keep to the starboard side of the channel and pass ${n} port to port (Rule 9(a)).`;
   if(e.cl.type==='chancross')return `${n} must not impede you in the channel (${e.cl.rule} & 9(d)). Hold your course; if she starts across, sound five short and slow down or stop.`;
   if(e.cl.type==='chanover')return `To overtake ${n} in the channel, sound ${patHTML('LLSS')} (I intend to pass on your port side) and wait for her ${patHTML('LSLS')} before passing (Rule 9(e)).`;
-  if(e.cl.r18)return `${n} is a ${TYPE_LABEL[e.vt].toLowerCase()}: a power-driven vessel keeps out of her way (${e.cl.rule}), whatever the crossing or head-on rules say. Act early and boldly.`;
+  if(e.cl.r18)return `${n} is ${A_VESSEL[e.vt]}: a power-driven vessel keeps out of her way (${e.cl.rule}), whatever the crossing or head-on rules say. Act early and boldly.`;
   return {headon:`Head-on with ${n}: both turn to STARBOARD (Rule 14).`,xstbd:`${n} is crossing from starboard: you give way (Rule 15). Act early and boldly.`,
     xport:`${n} is crossing from port: you stand on. Hold course and speed (Rule 17). If she clearly isn't keeping clear, sound five short (Rule 34(d)) and act: not to port for a ship on your port side.`,overtaking:`You're overtaking ${n}: keep well clear, either side (Rule 13).`,
     overtaken:`${n} is overtaking you: hold course and speed (Rules 13 & 17). If she clearly isn't keeping clear, sound five short (Rule 34(d)) and act.`}[e.cl.type];
@@ -130,23 +131,23 @@ function encTick(a,c){
   const dho=norm(o.th-e.h0); // ordered course change since the encounter began
   if(before){
     if(!e.dir&&Math.abs(dho)>=10){e.dir=Math.sign(dho);e.dirT=P.time;e.dirRb=norm(brg(o,a)-o.h);
-      if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)wkToast('✗ Rule 14: head-on, turn to STARBOARD','bad');
-      if(e.cl.type==='xstbd'&&e.dir<0)wkToast('✗ Rule 15: turn to starboard and pass astern of her','bad');}
+}
     if(o.tv<0&&e.asternT===null)e.asternT=P.time;
 
     if(e.cl.role==='stand'&&e.dueT===null&&c.cpa<0.35&&c.range<2.2)e.dueT=P.time; // when a compliant give-way ship acts
     const apparent=e.rogue&&e.dueT!==null&&P.time-e.dueT>=ROGUE_AFTER;
-    if(!e.act&&(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)))e.act={t:P.time,range:c.range,apparent,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};
+    if(!e.act){if(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)){e.actP??={t:P.time,range:c.range,apparent,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};if(P.time-e.actP.t>=1.5)e.act=e.actP;}
+      else e.actP=null;} // cancelled straight away: not an action
     if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&!e.excused&&!apparent&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){
-      const g=P.encs.find(x=>x!==e&&x.announced&&x.cl.role==='give'&&(!x.done||x.doneT>=e.t0)); // a give-way encounter overlapping this one
-      if(g)e.excused=g.name;else{e.standBreak=true;wkToast('✗ Rule 17(a): you are stand-on — hold course and speed','bad');}}
+      const g=P.encs.find(x=>x!==e&&x.announced&&x.cl.role==='give'&&(x.act||x.actP)&&(!x.done||x.doneT>e.t0+1)); // a give-way encounter overlapping this one, that you acted for
+      if(g)e.excused=g.name;else e.standBreak=true;}
   }
   if(P.m.fog)e.minV=Math.min(e.minV??99,o.tv); // ordered speed: actions count from the moment they're ordered
   if(!before&&e.cpaT===null){e.cpaT=P.time;if(P.m.chan)e.cpaOff=chanPos(P.m.chan,o).off;}
   const asp=norm(brg(a,o)-a.h);
-  if(e.cl.type==='xstbd'&&!e.crossed&&Math.sign(asp)!==Math.sign(e.asp)&&Math.abs(asp)<40&&c.range<1.5){e.crossed=true;wkToast('✗ Rule 15: you crossed ahead of her','bad');}
+  if(e.cl.type==='xstbd'&&!e.crossed&&Math.sign(asp)!==Math.sign(e.asp)&&Math.abs(asp)<40&&c.range<1.5)e.crossed=true;
   e.asp=asp;
-  if(c.range<COLLIDE){e.collided=true;P.hull--;a.hitT=P.time;P.booms.push({x:(o.x+a.x)/2,y:(o.y+a.y)/2,t:P.time});popText('💥 Collision',false);wkToast('💥 Collision with '+a.name+'!','bad');wkGrade(e);return;}
+  if(c.range<COLLIDE){e.collided=true;P.hull--;a.hitT=P.time;a.inContact=true;P.booms.push({x:(o.x+a.x)/2,y:(o.y+a.y)/2,t:P.time});popText('💥 Collision',false);wkToast('💥 Collision with '+a.name+'!','bad');wkGrade(e);return;}
   // Overtaking, but you've slowed to her speed (or less) and aren't closing: staying astern keeps clear (Rule 13).
   if((e.geo||e.cl.type)==='overtaking'&&c.tcpa<=0&&o.v<=a.v+0.05){if(e.backT===null)e.backT=P.time;else if(P.time-e.backT>=3){e.droppedBack=true;return wkGrade(e);}}
   else e.backT=null;
@@ -157,6 +158,8 @@ function encTick(a,c){
 }
 function wkGrade(e){
   if(e.done)return;e.done=true;e.doneT=P.time;const N=e.notes;let pts=0;
+  if(!e.act&&e.actP)e.act=e.actP; // an order still held as she passed counts
+  if(!e.announced&&!e.collided&&!e.act){e.silent=true;e.pts=0;return;} // never a risk of collision, nothing done: nothing to judge
   const add=(p,ok,txt,fix)=>{pts+=p;N.push({ok,txt,p,fix});};
   if(e.collided)add(-200,false,'Collision','Act earlier and make a bigger change of course or speed.');
   if(e.hintCost)N.push({ok:null,txt:'You used a hint (−20, already taken)',p:0});
@@ -166,7 +169,7 @@ function wkGrade(e){
   if(e.cl.r18)N.push({ok:null,txt:`${P.m.night?'':WK_TYPES[e.vt].look+' = '+TYPE_LABEL[e.vt].toLowerCase()+'. '}${e.cl.rule} puts her above a power-driven vessel, so ${e.cl.type==='headon'?'Rule 14 (head-on) didn\'t apply':'the crossing rule didn\'t apply'}: you keep out of her way.`,p:0});
   if(e.cl.role==='give'){
     if(!e.act)add(-100,false,`No substantial action taken (${e.cl.rule} & Rule 16)`,
-      e.cl.r18?`She was a ${TYPE_LABEL[e.vt].toLowerCase()}. Keep out of her way: alter boldly (30° or more) or slow right down, early.`:
+      e.cl.r18?`She was ${A_VESSEL[e.vt]}. Keep out of her way: alter boldly (30° or more) or slow right down, early.`:
       e.cl.type==='headon'?'Head-on: turn boldly to starboard (30° or more) as soon as you see her ahead with a steady bearing.':
       e.cl.type==='overtaking'?'When overtaking, alter course well before you close: 30° or more to either side.':
       'You were give-way: alter 30° or more to starboard to pass astern of her, or cut your speed by half or more — early.');
@@ -174,8 +177,8 @@ function wkGrade(e){
     else if(e.act.tg>=2.5)add(40,true,`Action ${e.act.tg.toFixed(1)} min before CPA (Rule 8)`,'Good, but act as soon as the bearing is steady: aim for 5+ minutes before CPA.');
     else add(-50,false,`Action left late: only ${Math.max(0,e.act.tg).toFixed(1)} min before CPA (Rule 8)`,'Act as soon as you see the bearing is steady and the range closing. Aim for 5+ minutes before CPA.');
     if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)add(-75,false,'Turned to port in a head-on situation (Rule 14)','Head-on, both ships turn to starboard and pass port to port.');
-    if(e.cl.type==='xstbd'&&e.dir<0&&!e.crossed)add(-40,false,'Turned to port for a ship on your starboard side (Rule 15)','Turn to starboard so you pass astern of her. A port turn heads across her bow.');
-    if(e.crossed)add(-75,false,'Crossed ahead of the stand-on vessel (Rule 15)','Always pass astern of the ship on your starboard side. Never cut across her bow.');
+    if(e.cl.type==='xstbd'&&e.dir<0&&!e.crossed)add(-40,false,`Turned to port for a ship on your starboard side (${e.cl.r18?e.cl.rule+' & Rule 8':'Rule 15'})`,'Turn to starboard so you pass astern of her. A port turn heads across her bow.');
+    if(e.crossed)add(-75,false,`Crossed ahead of the stand-on vessel (${e.cl.r18?e.cl.rule+' & Rule 8':'Rule 15'})`,'Always pass astern of the ship on your starboard side. Never cut across her bow.');
     if(e.droppedBack)add(0,true,'Dropped back and stayed astern of her: that keeps clear (Rules 8(e) & 13)');
   }else{
     if(e.standBreak)add(-50,false,'Changed course or speed while she was keeping clear (Rule 17(a))','As stand-on, hold course and speed so she can predict you. Only act if she clearly isn\'t (sound 5 short first) or collision is imminent.');
@@ -228,8 +231,9 @@ function wkTick(dt){
   const dv=o.tv-o.v,acc=1.2*dt;o.v+=Math.abs(dv)<acc?dv:Math.sign(dv)*acc;
   const ve=pvel(o);o.x+=ve.x*dt;o.y+=ve.y*dt;
   P.trailT+=dt;if(P.trailT>0.4){P.trailT=0;o.trail.push({x:o.x,y:o.y});if(o.trail.length>60)o.trail.shift();for(const a of P.ais){a.trail.push({x:a.x,y:a.y});if(a.trail.length>40)a.trail.shift();}}
-  for(const a of P.ais)if(dist(o,a)<COLLIDE&&(a.hitT==null||P.time-a.hitT>6)&&!P.encs.some(e=>e.id===a.id&&!e.done)){
-    a.hitT=P.time;P.hull--;P.score-=100;P.booms.push({x:(o.x+a.x)/2,y:(o.y+a.y)/2,t:P.time,name:a.name});popText('💥 Collision −100',false);wkToast('💥 Collision with '+a.name+'!','bad');}
+  for(const a of P.ais){if(a.inContact&&dist(o,a)>2*COLLIDE)a.inContact=false;}
+  for(const a of P.ais)if(dist(o,a)<COLLIDE&&!a.inContact&&!P.encs.some(e=>e.id===a.id&&!e.done)){
+    a.inContact=true;a.hitT=P.time;P.lateHits.push(a.name);P.hull--;P.score-=100;P.booms.push({x:(o.x+a.x)/2,y:(o.y+a.y)/2,t:P.time,name:a.name});popText('💥 Collision −100',false);wkToast('💥 Collision with '+a.name+'!','bad');}
   if(P.chan)chanTick(dt);
   if(P.fog)fogTick(dt);
   for(const a of P.ais){aiTick(a,dt);encTick(a,cpaOf(o,a));}
@@ -241,7 +245,7 @@ function wkTick(dt){
     return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
   const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&(m.endless||Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0); // endless: traffic finds you wherever you steer
   if(m.endless)endlessFeed();
-  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>(m.gap??3)&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const g=m.enc[P.spawnI++];[].concat(g).forEach((k,i)=>spawnAI(k,GROUP_T[i]));P.lastSpawn=P.time;}
+  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&Math.abs(o.tv-o.v)<1&&P.time-P.lastSpawn>(m.gap??3)&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const g=m.enc[P.spawnI++];[].concat(g).forEach((k,i)=>spawnAI(k,GROUP_T[i]));P.lastSpawn=P.time;}
   // waypoints
   const wp=m.wps[P.wpi];
   if(P.chan?chanPos(P.m.chan,o).s>=P.chan.wpS[P.wpi]:wpPassed(m,o)){P.score+=50;P.wpi++;if(m.endless)endlessExtend();
@@ -251,16 +255,16 @@ function wkTick(dt){
 }
 function wkEnd(ok){
   P.over=true;for(const e of P.encs)if(!e.done)wkGrade(e);
-  const chanHTML=chanEndGrade()+fogEndGrade();
-  let bonus=0;if(ok){bonus=Math.max(0,Math.round((P.m.par-P.time)*2))+P.hull*50;P.score+=bonus;}
+  const chanHTML=chanEndGrade()+fogEndGrade()+(P.lateHits.length?`<div class="enc"><h4><span>❌ Collisions after an encounter</span><span style="color:var(--bad)">−${100*P.lateHits.length}</span></h4><ul>${P.lateHits.map(n=>`<li style="color:#ffb3b3">✗ Hit ${esc(n)} after you'd already passed her (−100, −1 heart)<div class="fix">➜ Keep watching ships you've passed, especially slow ones, before you turn back to your course.</div></li>`).join('')}</ul></div>`:'');
+  let bonus=0;if(ok){bonus=(P.m.fog?0:Math.max(0,Math.round((P.m.par-P.time)*2)))+P.hull*50;P.score+=bonus;} // no time bonus in fog: safe speed comes first
   try{const k=bestKey(P.m),b=+localStorage.getItem(k)||0;if(ok&&P.score>b)localStorage.setItem(k,P.score);}catch(e){}
   $('dbHead').textContent=ok?'⚓ Mission complete':'💥 Mission failed — out of hull';
   $('dbScore').textContent=`${P.score} pts`;
   $('dbSub').textContent=`${P.m.name} · ${gclock(P.time)} at sea · hull ${'❤️'.repeat(Math.max(0,P.hull))}${ok?` · bonus +${bonus}`:''}`;
   if(P.m.endless)endlessEnd(); // endless: its own heading, subtitle and best score
-  const good=P.encs.filter(e=>e.pts>=60).length;
-  $('dbList').innerHTML=`<p class="small" style="margin:4px 2px 8px">${P.encs.length} encounters · ${good} handled well. Here's how each one went:</p>`+
-    chanHTML+P.encs.map(e=>`<div class="enc"><h4><span>${e.pts>=60?'✅':e.pts>=0?'⚠️':'❌'} ${esc(e.name)} · ${encTitle(e)}</span><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></h4>
+  const shown=P.encs.filter(e=>!e.silent),good=shown.filter(e=>e.pts>=60).length;
+  $('dbList').innerHTML=`<p class="small" style="margin:4px 2px 8px">${shown.length} encounter${shown.length===1?'':'s'} · ${good} handled well. Here's how each one went:</p>`+
+    chanHTML+shown.map(e=>`<div class="enc"><h4><span>${e.pts>=60?'✅':e.pts>=0?'⚠️':'❌'} ${esc(e.name)} · ${encTitle(e)}</span><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></h4>
       <div class="small" style="margin-bottom:4px">${roleLine(e)}</div>
       <ul>${e.notes.map(n=>`<li style="color:${n.ok===true?'#bfeccd':n.ok===false?'#ffb3b3':'#e8d9a8'}">${n.ok===true?'✓':n.ok===false?'✗':'💡'} ${n.txt}${n.p?` (${n.p>0?'+':''}${n.p})`:''}${n.fix?`<div class="fix">➜ ${esc(n.fix)}</div>`:''}</li>`).join('')}</ul></div>`).join('');
   openOv('ovDebrief');

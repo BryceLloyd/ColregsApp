@@ -1,5 +1,8 @@
 // Shared helpers: geometry (bearings, velocities), DOM helpers, formatting.
 const LINK=location.origin+location.pathname.replace(/index\.html$/,"");
+// Older Safari (iOS 15) lacks these: small fallbacks so one missing API can't freeze the app.
+if(!Array.prototype.findLast)Array.prototype.findLast=function(f){for(let i=this.length-1;i>=0;i--)if(f(this[i],i,this))return this[i];};
+const rrect=(c,x,y,w,h,r)=>c.roundRect?c.roundRect(x,y,w,h,r):c.rect(x,y,w,h);
 const D2R=Math.PI/180;
 const norm=a=>((a+180)%360+360)%360-180;
 const vel=(h,v)=>({x:Math.sin(h*D2R)*v,y:Math.cos(h*D2R)*v});
@@ -12,5 +15,6 @@ const fmt=s=>{s=Math.round(s);return Math.floor(s/60)+':'+String(s%60).padStart(
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a};
 const TYPE_LABEL={power:"Power-driven",sail:"Sailing vessel",fishing:"Fishing (trawling)",nuc:"Not under command",ram:"Restricted in ability to manoeuvre",cbd:"Constrained by draught",anchor:"At anchor",fishnt:"Fishing (nets/lines)"};
+const A_VESSEL={power:'a power-driven vessel',sail:'a sailing vessel',fishing:'a vessel engaged in fishing',nuc:'a vessel not under command',ram:'a vessel restricted in her ability to manoeuvre',cbd:'a vessel constrained by her draught'};
 const STACK={fishing:["#ffffff","#2bff6a"],fishnt:["#ffffff","#ff3b3b"],nuc:["#ff3b3b","#ff3b3b"],ram:["#ff3b3b","#ffffff","#ff3b3b"],cbd:["#ff3b3b","#ff3b3b","#ff3b3b"],anchor:["#ffffff"]};
 const MAST={power:1,ram:1,cbd:1};

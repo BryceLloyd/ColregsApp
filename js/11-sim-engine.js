@@ -57,7 +57,7 @@ function loadQ(q){
   sc=null;$('stage').style.display='none';$('dock').style.display='none';const m=$('mcq');m.style.display='flex';m.scrollTop=0;
   $('prog').textContent=`${qi+1} / ${queue.length}`;
   $('tags').innerHTML=`<span class="pill">${q.cat}</span>`+(q.bonus?' <span class="pill night">Bonus</span>':'');
-  $('title').textContent=q.bonus?'Follow-up: same situation':q.cat==='Rules'?'Rules of the Road':q.cat;
+  $('title').textContent=q.bonus?'Follow-up: same situation':q.cat==='Rules'?'Rules of the road':q.cat;
   $('prompt').textContent=q.bonus?'Bonus point — no life lost if wrong.':q.order?'Tap the items in the right order.':'Choose the right answer.';
   mountQ(m,q,{wrongLabel:q.bonus?'❌ Not quite (no life lost)':(mode==='challenge'?'❌ Wrong — life lost':'❌ Not quite'),
     onAnswer:ok=>{if(!q.bonus)answered++;if(ok){score++;if(q.bonus)bonus++;}else if(!q.bonus){missed.push(q.cat);if(mode==='challenge')lives--;}hud();},
@@ -97,6 +97,8 @@ function dangerWhy(V,k){
   if(i===45&&k==='stand')return "A sailing vessel must not impede a ship following a traffic lane (Rule 10(j)). You got through on the angles, but a big ship in a lane can't easily manoeuvre for you.";
   if(i===27)return "There was no risk of collision: her bearing was drawing right. "+(k==='stbd'?"Turning to starboard swung you across her bow and CREATED a risk that wasn't there.":"Changing course or speed for no reason only makes you harder to predict.");
   if(i===4||i===30)return "She was the overtaking vessel and was keeping clear of you. Turning or slowing under her bow makes her job harder. Overtaking collisions often happen exactly like that.";
+  if(i===16&&k==='stand')return "Rule 17(b): once the give-way vessel can't avoid collision by her action alone, you must act. Standing on into a collision is never allowed. You got through only because of the angles.";
+  if(i===24&&k==='stand')return "She's at anchor and can't move out of your way. Avoiding her is entirely up to you (Rule 8). You got through only because of the angles.";
   if(i===14)return "In a narrow channel you keep to the starboard side. Moving to port put you on her side of the channel, head-on in a narrow space with nowhere to go.";
   if((i===0||i===11)&&k==='stand'&&V.other.type==='power')return "In a head-on situation BOTH vessels must turn to starboard. You left it all to her. If she'd expected you to act too, the gap would have been far too small.";
   if(V.other.type==='buoy'&&k==='slow')return "Stopping short doesn't solve anything: the mark is telling you which side to pass, and you still have to choose one. Sitting stopped in a channel also gets in other vessels' way.";

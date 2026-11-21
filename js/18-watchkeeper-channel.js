@@ -110,9 +110,9 @@ function chanTick(dt){
 }
 
 // ---- grading ----
-const chanLabel=e=>TYPE_LABEL[e.vt].toLowerCase();
+const chanLabel=e=>A_VESSEL[e.vt];
 function chanRoleLine(e){
-  if(e.cl.type==='chancross')return `In a narrow channel, a ${chanLabel(e)} must not impede a ship that can only navigate inside it (${e.cl.rule} & 9(d)).`;
+  if(e.cl.type==='chancross')return `In a narrow channel, ${chanLabel(e)} must not impede a ship that can only navigate inside it (${e.cl.rule} & 9(d)).`;
   if(e.cl.type==='chanover')return 'Overtaking in a narrow channel takes a signal and her agreement (Rules 9(e) & 34(c)).';
   return 'In a narrow channel, each ship keeps to her own starboard side (Rule 9(a)).';
 }
@@ -123,7 +123,7 @@ function chanGrade(e,add){
 }
 function chanCrossGrade(e,add){
   if(e.rogue){
-    e.notes.push({ok:null,txt:`${e.name} crossed your bow. A ${chanLabel(e)} must not impede a ship that can only navigate inside the channel (${e.cl.rule} & 9(d)), but you still had to avoid a collision (Rule 8(f)).`,p:0});
+    e.notes.push({ok:null,txt:`${e.name} crossed your bow. ${chanLabel(e)[0].toUpperCase()+chanLabel(e).slice(1)} must not impede a ship that can only navigate inside the channel (${e.cl.rule} & 9(d)), but you still had to avoid a collision (Rule 8(f)).`,p:0});
     const doubt=P.horn.find(h=>h.p==='SSSSS'&&h.t>=e.t0&&h.t<=(e.cpaT??e.doneT??P.time));
     if(doubt)add(20,true,'Sounded five short when she started across (Rules 9(d) & 34(d))');
     else add(-15,false,'No doubt signal (Rules 9(d) & 34(d))','When a small craft looks set to cross ahead of you in a channel, sound at least five short blasts.');
@@ -133,13 +133,13 @@ function chanCrossGrade(e,add){
   }else{
     e.notes.push({ok:null,txt:`${e.name} waited at the edge until you'd passed, as ${e.cl.rule} requires.`,p:0});
     if(!e.act)add(40,true,`Held your course on the starboard side while she waited (${e.cl.rule})`);
-    else add(10,true,'Slowed down although she was waiting for you','Harmless, but she was keeping out of your way. Watch whether she actually moves before you act.');
+    else add(10,true,e.act.by==='speed'?'Slowed down although she was waiting for you':'Altered course although she was waiting for you','Harmless, but she was keeping out of your way. Watch whether she actually moves before you act.');
   }
   if(!e.collided&&e.minR<0.1)add(-50,false,`Close quarters: passed only ${e.minR.toFixed(2)} nm off`,'Slow down sooner so she clears well ahead of you.');
 }
 function chanOverGrade(e,add){
   const a=P.ais.find(x=>x.id===e.id),passed=e.cpaT!=null&&(!a||chanPos(P.m.chan,P.own).s>chanPos(P.m.chan,a).s);
-  if(!passed){add(30,true,'Stayed astern of her rather than overtaking (Rule 9(e))');return;}
+  if(!passed){if(!e.collided)add(30,true,'Stayed astern of her rather than overtaking (Rule 9(e))');return;}
   const sig=P.horn.find(h=>(h.p==='LLSS'||h.p==='LLS')&&h.t>=e.t0&&h.t<=e.cpaT);
   if(!sig)add(-30,false,'Overtook in the channel without signalling (Rules 9(e) & 34(c))','Before overtaking in a narrow channel, sound ▬ ▬ • • ("I intend to overtake you on your port side") or ▬ ▬ • (starboard side), and wait for her ▬ • ▬ •.');
   else if(sig.p==='LLS')add(-20,false,'Signalled to pass on her starboard side, where there was no room (Rule 34(c))','She was already over to starboard. Signal ▬ ▬ • • to pass on her port side.');

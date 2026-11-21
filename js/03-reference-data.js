@@ -1,13 +1,16 @@
 // Reference data: lights, day shapes, code flags, sound signals.
 // ================= DATA: lights, shapes, flags, sounds =================
 // light: [colour, x, y]  colours w r g y Y(flashing yellow). x left/right, y up is negative
+// Pairs that look identical in a picture (one white light): never use one as a distractor for the other.
+const SAME_LOOK=['Any vessel seen from astern','At anchor (under 50 m)'];
+const lookAlike=(a,b)=>a!==b&&SAME_LOOK.includes(a.s)&&SAME_LOOK.includes(b.s);
 const LIGHTS=[
  {s:"Power vessel, head-on",n:"Power-driven vessel (under 50 m) pointing at you",L:[["w",0,-2.2],["g",-.7,0],["r",.7,0]],note:"Masthead light over BOTH sidelights: she's heading straight for you. Head-on — both turn to starboard."},
  {s:"Power vessel, crossing from your right",n:"Power vessel showing her port (red) side",L:[["w",-.4,-2.2],["r",.3,0]],note:"White masthead + red. Seen on your starboard bow, she's crossing from starboard: you give way."},
  {s:"Power vessel, showing her green side",n:"Power vessel showing her starboard (green) side",L:[["w",.4,-2.2],["g",-.3,0]],note:"White masthead + green. On your port bow she's crossing from port: she gives way, you stand on."},
  {s:"Power vessel over 50 m, beam on",n:"Power vessel 50 m or more, heading to your left",L:[["w",-1.3,-1.6],["w",1.1,-2.8],["r",-.6,0]],note:"Two masthead lights, the aft one higher. Their spread shows her heading; red = her port side faces you."},
  {s:"Any vessel seen from astern",n:"Sternlight only",L:[["w",0,0]],note:"A single white light low down that you're catching up: a sternlight. You're overtaking — keep clear."},
- {s:"Sailing vessel, head-on",n:"Sailing vessel underway, from ahead",L:[["g",-.6,0],["r",.6,0]],note:"Sidelights but NO masthead light = sailing vessel (or a small rowing boat). Power keeps clear of sail."},
+ {s:"Sailing vessel, head-on",n:"Sailing vessel underway, from ahead",L:[["g",-.6,0],["r",.6,0]],note:"Sidelights but NO masthead light = sailing vessel (or a small rowing boat, or a vessel being towed: look for the tug ahead). Power keeps clear of sail (Rules 18 & 25)."},
  {s:"Sailing vessel (optional lights)",n:"Sailing vessel with optional all-round red over green",L:[["r",0,-3],["g",0,-2.2],["g",-.6,0],["r",.6,0]],note:"'Red over green, sailing machine.' Optional masthead lights on a sailing vessel."},
  {s:"Trawling",n:"Vessel engaged in trawling, making way",L:[["g",0,-2.6],["w",0,-1.7],["g",-.6,0],["r",.6,0]],note:"'Green over white, trawling tonight.' Keep clear of a fishing vessel."},
  {s:"Fishing (not trawling)",n:"Fishing with nets or lines, making way",L:[["r",0,-2.6],["w",0,-1.7],["g",-.6,0],["r",.6,0]],note:"'Red over white, fishing at night.' Gear may stretch a long way."},
