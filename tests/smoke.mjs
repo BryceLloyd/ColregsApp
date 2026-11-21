@@ -317,18 +317,23 @@ const fair = await page.evaluate(() => {
   out.quiet = { silent: !!r.e.silent, pts: r.e.pts, score: P.score };
   // ordering 40° for one tick and cancelling it is not "substantial action"
   r = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e, a, i) => { if (e.announced && !e.flick) { e.flick = 1; P.own.th = norm(e.h0 + 40); } else if (e.flick === 1) { e.flick = 2; P.own.th = e.h0; } }, e => e.done);
-  out.flick = r.e.notes.some(n => /No substantial action/.test(n.txt));
+  out.flick = r.e.notes.some(n => /^No action taken \(Rules 15 & 16\)/.test(n.txt));
   // the same order held is an action
   r = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e) => { if (e.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + 50); } }, e => e.done);
-  out.held = !!r.e.act && !r.e.notes.some(n => /No substantial action/.test(n.txt));
+  out.held = !!r.e.act && !r.e.notes.some(n => /No action taken|Action too small/.test(n.txt));
+  // a 20° turn held is too small: −40 and the card says how far you turned; 10° counts for nothing
+  r = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e) => { if (e.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + 20); } }, e => e.done);
+  out.small20 = r.e.notes.find(n => /Action too small/.test(n.txt)); out.small20 = out.small20 && out.small20.p + ' ' + out.small20.txt;
+  r = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e) => { if (e.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + 10); } }, e => e.done);
+  out.small10 = r.e.notes.find(n => /Action too small/.test(n.txt))?.p;
   // once her encounter is over, sitting on top of her costs one heart, not one every few seconds
   const a = r.a; a.x = P.own.x; a.y = P.own.y; a.h = a.th = P.own.h; a.v = a.tv = P.own.v; a.state = 'resume'; const h0 = P.hull;
   for (let i = 0; i < 300; i++) { a.x = P.own.x + 0.02; a.y = P.own.y; wkTick(0.05); }
   out.contact = { heartsLost: h0 - P.hull, logged: P.lateHits.length };
   MISSIONS[0].enc = keep; window.sound = snd; return out;
 });
-ok(fair.quiet.silent && fair.quiet.pts === 0 && fair.quiet.score === 0 && fair.flick && fair.held && fair.contact.heartsLost === 1 && fair.contact.logged === 1,
-  `referee fairness: no-risk ship closed quietly (${fair.quiet.score} pts); a cancelled 40° order ${fair.flick ? 'is not' : 'IS'} an action; a held one ${fair.held ? 'is' : 'is NOT'}; 15 s overlapping a passed ship cost ${fair.contact.heartsLost} heart`);
+ok(fair.quiet.silent && fair.quiet.pts === 0 && fair.quiet.score === 0 && fair.flick && fair.held && /^-40 Action too small: you altered only 20° to starboard/.test(fair.small20 || '') && fair.small10 === -100 && fair.contact.heartsLost === 1 && fair.contact.logged === 1,
+  `referee fairness: no-risk ship closed quietly (${fair.quiet.score} pts); a cancelled 40° order ${fair.flick ? 'is not' : 'IS'} an action; a held one ${fair.held ? 'is' : 'is NOT'}; 20° held: "${fair.small20}"; 10°: ${fair.small10}; 15 s overlapping a passed ship cost ${fair.contact.heartsLost} heart`);
 
 // 17. Older iPhones (iOS 15): without findLast or canvas roundRect, and with an error in one frame, the app keeps running.
 const oldPage = await browser.newPage({ viewport: { width: 375, height: 667 } });

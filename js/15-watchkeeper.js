@@ -27,6 +27,8 @@ const R18_POOL=['sail','fishing','nuc','ram','cbd'];
 const wkType=b=>WK_TYPES[b.type]?b.type:'power';
 let P=null,pctx=null,PW=360,PH=400;
 const pvel=b=>vel(b.h,b.v*KN);
+// "Rule 14" + 16 → "Rules 14 & 16"; "Rules 13 & 17" + 16 → "Rules 13, 17 & 16".
+function rulesAnd(r,n){const m=String(r).match(/^Rules? (.+)$/);if(!m)return `${r} & Rule ${n}`;const p=m[1].split(/\s*&\s*|,\s*/).concat(String(n));return `Rules ${p.slice(0,-1).join(', ')} & ${p[p.length-1]}`;}
 function cpaOf(a,b){const px=b.x-a.x,py=b.y-a.y,va=pvel(a),vb=pvel(b),wx=vb.x-va.x,wy=vb.y-va.y,w2=wx*wx+wy*wy;
   const tc=w2<1e-12?0:-(px*wx+py*wy)/w2,tt=Math.max(tc,0);return{cpa:Math.hypot(px+wx*tt,py+wy*tt),tcpa:tc,range:Math.hypot(px,py)};}
 function classify(me,tg){
@@ -145,8 +147,8 @@ function aiLastResort(a,dt){
   if(d!=null){a.th=norm(a.h+d);a.v+=Math.max(-4*dt,Math.min(dt,a.v0-a.v));}
   else if(a.v0>=4)a.v=Math.max(0,a.v-4*dt);
 }
-function encAlert(e){if(e.cl.type==='fog')return `⚠ Radar: ${e.name}, close-quarters situation developing. Your move.`;if(e.cl.type==='chan')return `⚠ ${e.name} is coming down the channel towards you.`;
-  if(e.cl.type==='chancross')return `⚠ ${e.name} is at the edge of the channel ahead.`;if(e.cl.type==='chanover')return `⚠ You're coming up behind ${e.name} in the channel.`;return `⚠ Risk of collision with ${e.name}: bearing steady, range closing. Your move.`;}
+function encAlert(e){if(e.cl.type==='fog')return `⚠ Radar: ${e.name}, close-quarters situation developing.`;if(e.cl.type==='chan')return `⚠ ${e.name} is coming down the channel towards you.`;
+  if(e.cl.type==='chancross')return `⚠ ${e.name} is at the edge of the channel ahead.`;if(e.cl.type==='chanover')return `⚠ You're coming up behind ${e.name} in the channel.`;return `⚠ Risk of collision with ${e.name}: bearing steady, range closing.`;}
 function encHint(e){
   const n=e.name;
   if(e.cl.type==='fog')return `In fog there's no stand-on vessel: act early for ${n}. Alter to starboard if she's forward of your beam (never towards a ship abeam or astern), or slow right down. If you hear her fog signal forward of the beam, slow to steerage way (Rule 19).`;
@@ -175,6 +177,9 @@ function encTick(a,c){
 
     if(e.cl.role==='stand'&&e.dueT===null&&c.cpa<0.35&&c.range<2.2)e.dueT=P.time; // when a compliant give-way ship acts
     const apparent=e.rogue&&e.dueT!==null&&P.time-e.dueT>=ROGUE_AFTER;
+    if(!e.act){const cut=e.v0>2?Math.max(0,1-Math.max(o.tv,0)/e.v0):0,k=Math.round(dho)+'/'+Math.round(cut*20); // smaller alterations held 1.5 s, for the result card
+      if(e.holdK!==k){e.holdK=k;e.holdT=P.time;}
+      else if(P.time-e.holdT>=1.5){if(Math.abs(dho)>Math.abs(e.partD||0))e.partD=dho;if(cut>(e.partCut||0))e.partCut=cut;}}
     if(!e.act){if(Math.abs(dho)>=30||(e.v0>2&&o.tv<=0.5*e.v0)){e.actP??={t:P.time,range:c.range,apparent,tg:c.tcpa*WK_TS/60,by:Math.abs(dho)>=30?'course':'speed'};if(P.time-e.actP.t>=1.5)e.act=e.actP;}
       else e.actP=null;} // cancelled straight away: not an action
     if(e.cl.role==='stand'&&e.announced&&!e.standBreak&&!e.excused&&!apparent&&c.range>0.6&&(Math.abs(dho)>=15||o.tv<0.6*e.v0)){
@@ -207,7 +212,8 @@ function wkGrade(e){
   if(e.cl.type.startsWith('chan')){chanGrade(e,add);e.pts=pts;P.score+=pts;return showResult(e);}
   if(e.cl.r18)N.push({ok:null,txt:`${P.m.night?'':WK_TYPES[e.vt].look+' = '+TYPE_LABEL[e.vt].toLowerCase()+'. '}${e.cl.rule} puts her above a power-driven vessel, so ${e.cl.type==='headon'?'Rule 14 (head-on) didn\'t apply':'the crossing rule didn\'t apply'}: you keep out of her way.`,p:0});
   if(e.cl.role==='give'){
-    if(!e.act)add(-100,false,`No substantial action taken (${e.cl.rule} & Rule 16)`,
+    const pd=e.partD||0,pc=e.partCut||0,small=Math.abs(pd)>=10?`altered only ${Math.round(Math.abs(pd))}° to ${pd>0?'starboard':'port'}`:pc>=0.15?`slowed by only ${Math.round(pc*100)}%`:'';
+    if(!e.act)add(small&&(Math.abs(pd)>=15||pc>=0.25)?-40:-100,false,small?`Action too small: you ${small}, not enough for her to see (Rules 8(b) & 16)`:`No action taken (${rulesAnd(e.cl.rule,16)})`,
       e.cl.r18?`She was ${A_VESSEL[e.vt]}. Keep out of her way: alter boldly (30° or more) or slow right down, early.`:
       e.cl.type==='headon'?'Head-on: turn boldly to starboard (30° or more) as soon as you see her ahead with a steady bearing.':
       e.cl.type==='overtaking'?'When overtaking, alter course well before you close: 30° or more to either side.':
@@ -216,8 +222,8 @@ function wkGrade(e){
     else if(e.act.tg>=2.5)add(40,true,`Action ${e.act.tg.toFixed(1)} min before CPA (Rule 8)`,'Good, but act as soon as the bearing is steady: aim for 5+ minutes before CPA.');
     else add(-50,false,`Action left late: only ${Math.max(0,e.act.tg).toFixed(1)} min before CPA (Rule 8)`,'Act as soon as you see the bearing is steady and the range closing. Aim for 5+ minutes before CPA.');
     if(e.cl.type==='headon'&&!e.cl.r18&&e.dir<0)add(-75,false,'Turned to port in a head-on situation (Rule 14)','Head-on, both ships turn to starboard and pass port to port.');
-    if(e.cl.type==='xstbd'&&e.dir<0&&!e.crossed)add(-40,false,`Turned to port for a ship on your starboard side (${e.cl.r18?e.cl.rule+' & Rule 8':'Rule 15'})`,'Turn to starboard so you pass astern of her. A port turn heads across her bow.');
-    if(e.crossed)add(-75,false,`Crossed ahead of the stand-on vessel (${e.cl.r18?e.cl.rule+' & Rule 8':'Rule 15'})`,'Always pass astern of the ship on your starboard side. Never cut across her bow.');
+    if(e.cl.type==='xstbd'&&e.dir<0&&!e.crossed)add(-40,false,`Turned to port for a ship on your starboard side (${e.cl.r18?rulesAnd(e.cl.rule,8):'Rule 15'})`,'Turn to starboard so you pass astern of her. A port turn heads across her bow.');
+    if(e.crossed)add(-75,false,`Crossed ahead of the stand-on vessel (${e.cl.r18?rulesAnd(e.cl.rule,8):'Rule 15'})`,'Always pass astern of the ship on your starboard side. Never cut across her bow.');
     if(e.droppedBack)add(0,true,'Dropped back and stayed astern of her: that keeps clear (Rules 8(e) & 13)');
   }else{
     if(e.standBreak)add(-50,false,'Changed course or speed while she was keeping clear (Rule 17(a))','As stand-on, hold course and speed so she can predict you. Only act if she clearly isn\'t (sound 5 short first) or collision is imminent.');

@@ -158,8 +158,9 @@ input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);ba
 #pHint .more,#pHint .go{flex:none;margin-left:6px;border:none;border-radius:8px;background:rgba(255,255,255,.12);color:inherit;font-weight:700;padding:5px 8px;font-size:12px}
 #pHint .go{background:#3d7bff;color:#fff;padding:5px 12px}
 #pRange{position:absolute;right:8px;top:8px;min-height:34px;min-width:52px;border:none;border-radius:99px;background:rgba(5,12,24,.7);color:#fff;font-size:12px;font-weight:700;padding:5px 10px}
-#pCard{position:absolute;right:8px;bottom:8px;background:rgba(10,20,36,.92);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12px;line-height:1.45;min-width:150px;max-width:62%}
-#pCard b{font-size:12.5px}
+#pCard{position:absolute;right:6px;bottom:6px;background:rgba(10,20,36,.82);border:1px solid var(--line);border-radius:8px;padding:4px 7px;font-size:11px;line-height:1.4;max-width:calc(100% - 12px);white-space:nowrap;color:#cbd7e4}
+#pCard.risk{border-color:#7a3036}#pCard .rk{color:#ff9a9a;font-weight:700}#pCard .lk{color:var(--mut)}
+#pCard b{font-size:11.5px;color:var(--ink)}
 #pResult{display:none;position:absolute;left:8px;right:8px;bottom:8px;max-height:72%;overflow:auto;background:#0b1628;border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:12.5px;z-index:2}
 #pResult .rh{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:2px}
 #pResult ul{margin:6px 0 8px;padding-left:2px;list-style:none}#pResult li{margin:4px 0}
@@ -194,7 +195,7 @@ input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);ba
 .enc ul{margin:0;padding-left:18px}
 code{font-size:12px;background:#0b1626;padding:1px 4px;border-radius:4px}
 
-.hintBtn{margin-left:auto;flex:none;border:none;border-radius:8px;background:#5a4a12;color:#ffd98a;font-weight:700;padding:0 10px;min-height:36px;font-size:12.5px}
+.hintBtn{margin-left:auto;flex:none;border:1px solid rgba(255,217,138,.3);border-radius:99px;background:transparent;color:rgba(255,217,138,.8);font-weight:600;padding:0 9px;min-height:32px;min-width:52px;font-size:11.5px}
 .helpBtn{flex:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;padding:0 14px;min-height:40px;font-size:13px;font-weight:700}
 
 /* Learn › Lights: jump links as small sticky chips (not a second row of tabs) */
@@ -225,3 +226,5 @@ code{font-size:12px;background:#0b1626;padding:1px 4px;border-radius:4px}
 .installHint .i{font-size:22px}.installHint .shr{display:inline-block;transform:rotate(-90deg)}.installHint .ib{flex:none}
 .rmap b{display:inline;font-size:inherit;margin:0}
 @media (max-width:359px){.hhead b{font-size:15px;white-space:nowrap}.helpBtn{padding:0 10px}}
+#pHint .you{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.1);color:var(--ink);font-weight:700;white-space:nowrap}
+#pHint .al{flex:1;min-width:0}
