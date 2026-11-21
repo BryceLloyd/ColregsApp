@@ -52,7 +52,7 @@ function renderTab(i){curTab=i;
     else startQuiz('rules');
   }else if(curSec==='lights'){
     if(i===0){
-      let h=`<div class="tabs" style="margin-bottom:4px"><button class="tab" data-j="lt">Lights</button><button class="tab" data-j="sh">Shapes</button><button class="tab" data-j="sn">Sounds</button></div>`+
+      let h=`<div class="jumps"><button data-j="lt">💡 Lights</button><button data-j="sh">⚫ Shapes</button><button data-j="sn">📯 Sounds</button></div>`+
       `<div class="secH" id="lt">Lights at night</div><div class="rules">${LIGHTS_REF}</div><div class="cards" style="margin-top:8px">`+LIGHTS.map(it=>`<div class="card">${lightSVG(it)}<b>${esc(it.s)}</b><span>${esc(it.note)}</span></div>`).join('')+
       '</div><div class="secH" id="sh">Day shapes</div><div class="cards">'+SHAPES.map(it=>`<div class="card">${shapeSVG(it)}<b>${esc(it.s)}</b><span>${esc(it.note)}</span></div>`).join('')+'</div>'+
       '<div class="secH" id="sn">Sound signals</div><p class="small" style="margin:2px 2px 8px">• short blast (~1 s) · ▬ prolonged blast (4–6 s). Tap ▶ to hear (sped up).</p>';

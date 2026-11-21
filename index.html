@@ -15,11 +15,12 @@
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+<div id="rotate" role="alert"><div class="r">📱</div><b>Turn your phone upright</b><span class="small">COLREGs Trainer is made for portrait.</span></div>
 <svg width="0" height="0" style="position:absolute"><defs><filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>
 
 <!-- HOME -->
 <div class="view" id="home">
-  <div class="hhead"><span class="a">⚓</span><b>COLREGs Trainer</b><button class="ib" id="goPlay" aria-label="How to play and settings">⚙️</button></div>
+  <div class="hhead"><span class="a">⚓</span><b>COLREGs Trainer</b><button class="helpBtn" id="goPlay">How to play ⚙️</button></div>
   <div class="scroll stack" id="homeScroll">
     <div class="wkHero">
       <div class="t">🧭 Watchkeeper</div>
@@ -30,13 +31,12 @@
     <h3 class="sh">Practice</h3>
     <div class="grid2" id="wkPractice"></div>
     <h3 class="sh">More</h3>
-    <button class="tile" id="goChallenge"><span class="e">🏆</span><b>Challenge</b><small>Random scenarios and questions · 7 levels · 3 lives · leaderboard</small></button>
+    <button class="tile" id="goChallenge"><span class="e">🏆</span><b>Challenge</b><small>Random scenarios and questions · 7 levels · 3 lives · your best runs</small></button>
     <div class="grid2">
       <button class="tile" data-sec="rules"><span class="e">🚢</span><b>Rules &amp; scenarios</b><small>Steering &amp; sailing rules + scenarios</small></button>
       <button class="tile" data-sec="lights"><span class="e">💡📯</span><b>Lights &amp; sounds</b><small>Lights, shapes, sound signals + night &amp; fog scenarios</small></button>
       <button class="tile" data-sec="buoys"><span class="e">🛟</span><b>Buoyage</b><small>IALA marks + buoyage scenarios</small></button>
       <button class="tile" data-sec="flags"><span class="e">🚩</span><b>Signal flags</b><small>A–Z code flags + quiz</small></button>
-      <button class="tile" id="homeLb" style="grid-column:span 2"><span class="e">🏆</span><b>Challenge leaderboard</b><small>Who's top of the fleet?</small></button>
     </div>
   </div>
 </div>
@@ -60,9 +60,8 @@
     <div class="pbox"><div class="lb2">Engine · <span id="pSpd">12.0 kn</span></div>
       <div class="tele" id="pTele"></div></div>
   </div>
-  <div class="phorn"><span>Horn</span><button data-hp="S">•</button><button data-hp="SS">• •</button><button data-hp="SSS">• • •</button><button data-hp="SSSSS">5×•</button><button data-hp="L">▬</button></div>
+  <div class="phorn"><span>Horn</span><button data-hp="S">•</button><button data-hp="SS">• •</button><button data-hp="SSS">• • •</button><button data-hp="SSSSS">5×•</button><button data-hp="L">▬</button><button id="pFogBtn" style="display:none" aria-label="Automatic fog signal">🌫 off</button></div>
   <div class="phorn" id="pHornChan" style="display:none"><span>Pass</span><button data-hp="LLS">▬ ▬ • her stbd side</button><button data-hp="LLSS">▬ ▬ • • her port side</button></div>
-  <div class="phorn" id="pFog" style="display:none"><span>Fog</span><button id="pFogBtn">🔇 Fog signal: off</button></div>
 </div>
 
 <!-- Watchkeeper missions -->
@@ -74,7 +73,6 @@
     <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pHints" checked style="width:22px;height:22px"><span><b>Allow hints</b><br><span class="small">During an encounter you can tap 💡 to see your role and what to do, for −20 points. Off = no hints at all.</span></span></label>
     <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pPauseErr" checked style="width:22px;height:22px"><span><b>Pause to explain mistakes</b><br><span class="small">In practice missions, stop the clock when you get something wrong, so you can read why before carrying on. Points and a one-line verdict always appear as you play.</span></span></label>
     <p class="small" style="margin:0">Buoyage region: <b>IALA Region A</b> (standard).</p>
-    <div id="pMissions"></div>
   </div>
 </div></div>
 
@@ -141,6 +139,7 @@
     <label class="small" for="nick">Your name on the leaderboard</label>
     <input id="nick" maxlength="20" placeholder="e.g. Bryce" autocomplete="off">
     <button class="btn" id="startBtn">Start ⚓</button>
+    <button class="btn sec" id="homeLb">🏆 Your best runs</button>
     <p class="small center">Your vessel is <b style="color:#5aa2ff">blue</b> and starts heading up the screen.</p>
   </div>
 </div></div>
@@ -153,6 +152,7 @@
   <p id="lvDesc" class="small" style="margin:0 10px"></p>
   <div class="hearts" id="lvLives"></div>
   <button class="btn" id="lvGo" style="max-width:320px;margin:10px auto 0">Go ⚓</button>
+  <button class="btn sec" id="lvQuit" style="max-width:320px;margin:0 auto">Quit to home</button>
 </div></div>
 
 <!-- Challenge end -->
@@ -182,7 +182,7 @@
 
 <!-- Leaderboard -->
 <div class="ov" id="ovLb"><div class="ovIn">
-  <div class="ovHead"><h2>🏆 Leaderboard</h2><button class="ib" data-close>✕</button></div>
+  <div class="ovHead"><h2>🏆 Challenge: best runs</h2><button class="ib" data-close>✕</button></div>
   <div class="scroll">
     <div id="lbBoard"></div>
 

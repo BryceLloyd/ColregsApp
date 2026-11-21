@@ -15,6 +15,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
   - When you add a file, also add it to `index.html` and to `FILES` in `sw.js`.
 - **Views:** `#home` (Watchkeeper-first: best endless watch, big Play, practice missions, then Challenge and the learning sections), `#sec` (learning sections), `#app` (scenario simulator), `#play` (Watchkeeper). Switch between them with `show(name)`. Overlays (`.ov`) open with `openOv(id)` and close with `closeOv(id)`.
 - **Older iPhones:** `00-core.js` adds a `findLast` fallback and `rrect()` (use it instead of `ctx.roundRect`); the target is iOS 15+. `loop()` schedules the next frame first and wraps the work in try/catch, so one error can't freeze the app. Audio unlocks on the first touch and resumes after a lock (05-audio). Watchkeeper pauses when the page is hidden, and a ResizeObserver keeps the chart canvas matched to `#pStage`.
+- **Phone layout:** buttons are at least 40–44 px. Watchkeeper has one horn row; the fog toggle (`#pFogBtn`) joins it in fog missions, and the Pass row (`#pHornChan`) shows only while you're overtaking in a channel. Helm and engine stay side by side (engine wider; "Astn" on narrow phones). Ships in an encounter that are still off the chart get an edge arrow with their range. Encounter alerts show in the hint bar only (no toast). In endless, 🏠 twice ends the watch and keeps the score. The debrief offers the next practice mission. Landscape on a phone shows a "turn your phone upright" screen (`#rotate`). The smoke tests include a 320 × 568 layout check.
 - **One animation loop:** `loop()` in `13-sim-flow.js`. It drives the simulator when `view==='app'` and calls `wkFrame()` when `view==='play'`. It also ticks buoy-light animation.
 
 ## Key data (append, don't reorder)
@@ -80,11 +81,12 @@ Watchkeeper stages, in order:
 4. Restricted visibility, in parts:
    - 4a ✅ Mission 4 (Night passage): radar echoes on the chart, lights in a bridge view, lights explained after each encounter.
    - 4b ✅ Mission 5 (Fog): radar only, fog signals (Rule 35), conduct in restricted visibility with no stand-on or give-way roles (Rule 19).
-5. Endless mode and Watchkeeper leaderboards, in parts:
+5. Endless mode, study tools and leaderboards, in parts:
    - 5a ✅ Watchkeeper-first home page, in-play feedback (floating points, hint-bar verdicts, optional pause), endless mode with levels and hearts.
-   - 5b "Your weak rules" stats on the home page, time-speed setting, first-launch guide.
+   - 5a+ ✅ Full-app review fixes: rules content, referee fairness, iPhone robustness (PR A) and phone layout polish (PR B).
+   - 5b Study record (every verdict and answer logged by rule), rule map on the home page, first-launch routing and guide, iOS install hint.
+   - 5b+ Mistakes deck with spaced repetition; missing exam topics (Rules 2, 3, 24, 36, 37; anchored, aground and towing vessels); mock exam; endless that keeps getting harder.
    - 5c Shared Watchkeeper leaderboard (Supabase), when wanted.
 
 Known issues and ideas:
-- Watchkeeper on small phones (320 px, iPhone SE 1st gen): the engine panel's Full button is cut off at the right edge.
 - If the codebase keeps growing, consider moving to ES modules (Vite) and TypeScript. Do this as a separate, approved step.

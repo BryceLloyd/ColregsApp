@@ -34,7 +34,7 @@ function nightBridge(){
   c.fillStyle='rgba(160,180,210,.65)';c.font='bold 9px sans-serif';c.textAlign='left';c.fillText('👁 BRIDGE VIEW',6,11);
   const X=rb=>BW2/2+rb/NIGHT_VIEW*(BW2/2-m);
   c.font='9px sans-serif';c.textAlign='center';
-  for(const d of[-90,-45,0,45,90]){const x=X(d);c.fillRect(x-.5,BH2-12,1,5);c.fillText(d===0?'ahead':(d<0?'port ':'stbd ')+Math.abs(d)+'°',Math.max(16,Math.min(BW2-16,x)),BH2-2);}
+  for(const d of[-90,-45,0,45,90]){const x=X(d);c.fillRect(x-.5,BH2-12,1,5);c.textAlign=d===-90?'left':d===90?'right':'center';c.fillText(d===0?'ahead':(d<0?'port ':'stbd ')+Math.abs(d)+'°',d===-90?4:d===90?BW2-4:x,BH2-2);}c.textAlign='center';
   let abaft=0;
   for(const a of P.ais){const d=dist(o,a);if(d>NIGHT_RANGE)continue;const rb=norm(brg(o,a)-o.h);
     if(Math.abs(rb)>NIGHT_VIEW){abaft++;continue;}

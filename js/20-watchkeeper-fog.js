@@ -10,7 +10,7 @@ const radarOnly=()=>P.m.night||P.m.fog;
 function fogInit(m){if(!m.fog)return null;return{on:false,onT:0,next:0,heard:[]};}
 function fogToggle(){if(!P?.fog)return;P.fog.on=!P.fog.on;P.fog.next=P.time;fogUI();
   wkToast(P.fog.on?`🌫 Fog signal on: ${patHTML('L')} every 2 minutes while making way, ${patHTML('LL')} when stopped (Rule 35)`:'🌫 Fog signal off','info');}
-function fogUI(){const b=$('pFogBtn');if(!b||!P?.fog)return;b.classList.toggle('on',P.fog.on);b.textContent=P.fog.on?'🔊 Fog signal: on (auto, every 2 min)':'🔇 Fog signal: off';}
+function fogUI(){const b=$('pFogBtn');if(!b||!P?.fog)return;b.classList.toggle('on',P.fog.on);b.textContent=P.fog.on?'🌫 auto':'🌫 off';b.setAttribute('aria-label',P.fog.on?'Automatic fog signal on':'Automatic fog signal off');}
 
 // Each tick: your automatic fog signal, and other ships' fog signals that you hear.
 function fogTick(dt){

@@ -16,8 +16,9 @@ $('pcv').addEventListener('click',ev=>{if(!P)return;const r=$('pcv').getBounding
   for(const a of P.ais){const dx=a.x-o.x,dy=a.y-o.y,sx=PW/2+(dx*ca-dy*sa)*k,sy=PH*0.66-(dx*sa+dy*ca)*k,d=Math.hypot(sx-mx,sy-my);if(d<bd){bd=d;best=a;}}
   P.sel=best?best.id:null;wkUI();});
 let pHomeArmed=false;
-$('pHome').onclick=()=>{if(P&&!P.over&&!pHomeArmed){pHomeArmed=true;wkToast('Tap 🏠 again to abandon the mission','info');setTimeout(()=>pHomeArmed=false,2500);return;}pHomeArmed=false;P=null;show('home');};
+$('pHome').onclick=()=>{if(P&&!P.over&&P.m.endless&&pHomeArmed){pHomeArmed=false;return wkEnd(false);} // end the watch: the score is kept
+  if(P&&!P.over&&!pHomeArmed){pHomeArmed=true;wkToast(P.m.endless?'Tap 🏠 again to end your watch (your score is kept)':'Tap 🏠 again to abandon the mission','info');setTimeout(()=>pHomeArmed=false,2500);return;}pHomeArmed=false;P=null;show('home');};
 $('dbRetry').onclick=()=>{const m=P.m;closeOv('ovDebrief');wkStart(m);};
-$('dbMis').onclick=()=>{closeOv('ovDebrief');P=null;show('home');};
+$('dbMis').onclick=()=>{const nx=$('dbMis').dataset.next;closeOv('ovDebrief');if(nx)wkStart(MISSIONS.find(m=>m.id===nx));else{P=null;show('home');}};
 $('dbHome').onclick=()=>{closeOv('ovDebrief');P=null;show('home');};
 $('goPlay').onclick=wkOpen;

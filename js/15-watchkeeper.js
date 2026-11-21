@@ -40,22 +40,17 @@ function classify(me,tg){
   return{type:'xport',role:'stand',rule:'Rule 17'};
 }
 function bestKey(m){return 'wkBest_'+m.id;}
-function wkOpen(){
-  let h='';for(const m of MISSIONS){let best=null;try{best=localStorage.getItem(bestKey(m))}catch(e){}
-    h+=`<button class="tile mis" ${m.ready?'':'disabled'} data-m="${m.id}"><b>${MISSIONS.indexOf(m)+1} · ${esc(m.name)}</b><small>${esc(m.desc)}${m.ready?(best?` · Your best: ${+best}`:''):' · Coming soon'}</small></button>`;}
-  $('pMissions').innerHTML=h;$('pMissions').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{closeOv('ovPlay');wkStart(MISSIONS.find(m=>m.id===b.dataset.m));});
-  openOv('ovPlay');
-}
+function wkOpen(){openOv('ovPlay');}
 function wkStart(m){
   if(m.endless)m=endlessSetup(m);
   const wp=m.wps[0],h0=Math.round(brg({x:0,y:0},{x:wp[0],y:wp[1]}));
   P={m,own:{x:0,y:0,h:h0,th:h0,v:12,tv:12,tele:4,trail:[]},ais:[],encs:[],wpi:0,score:0,hull:3,time:0,horn:[],turns:[],refTh:h0,spawnI:0,lastSpawn:-8,
      sel:null,range:3,hints:$('pHints').checked,paused:false,over:false,nid:0,toasts:[],trailT:0,pops:[],lastRes:null,mistakePause:false,booms:[],lateHits:[]};$('pResult').style.display='none';
-  P.chan=chanInit(m);$('pHornChan').style.display=m.chan?'flex':'none';$('pBridge').style.display=m.night?'block':'none';
-  P.fog=fogInit(m);$('pFog').style.display=m.fog?'flex':'none';fogUI();
+  P.chan=chanInit(m);$('pHornChan').style.display='none';$('pBridge').style.display=m.night?'block':'none';
+  P.fog=fogInit(m);$('pFogBtn').style.display=m.fog?'':'none';fogUI();
   if(m.fog){P.own.v=P.own.tv=TELE[3].v;P.own.tele=3;P.lastSpawn=4;} // fog: start at half speed, with a moment before the first ship
   $('pTitle').textContent=m.endless?'⚓ Endless · level 1':`${MISSIONS.findIndex(x=>x.id===m.id)+1} · ${m.name}`;P.level=0;P.streak=0;$('pPause').textContent='⏸';
-  $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}">${x.l}</button>`).join('');
+  $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}" aria-label="${x.l}">${innerWidth<400&&x.l==='Astern'?'Astn':x.l}</button>`).join(''); // narrow phones: a shorter label so it isn't clipped
   $('pTele').querySelectorAll('button').forEach(b=>b.onclick=()=>{P.own.tele=+b.dataset.i;P.own.tv=TELE[P.own.tele].v;wkUI();});
   show('play');wkResize();wkUI();wkToast('Steer for waypoint 1 ⚑','info');if(m.fog)wkToast('🌫 Fog: you can see less than half a mile. Radar only.','info');
 }
@@ -126,7 +121,8 @@ function encTick(a,c){
     if(c.tcpa>0&&c.cpa<0.5&&c.range<3.2&&!a.dead&&P.encs.findLast(x=>x.id===a.id).droppedBack){newEnc(a);e=P.encs[P.encs.length-1];}
     else{if(c.tcpa>0&&c.cpa<0.25&&c.range<2&&!(a.hitT!=null&&P.time-a.hitT<15)){a.warnUntil=P.time+3;if(a.warnT==null||P.time-a.warnT>20){a.warnT=P.time;wkToast(`⚠ Watch ${a.name}: you're closing on her again`,'bad');}}return;}}
   const before=c.tcpa>0;
-  if(!e.announced&&before&&c.cpa<0.5&&c.range<3.2){e.announced=true;if(P.m.night)e.lights=lightsWords(a,o);if(P.m.fog)e.spd0=o.v;P.sel=a.id;wkToast(encAlert(e),'info');}
+  if(!e.announced&&before&&(c.cpa<0.5||e.cl.type.startsWith('chan'))&&c.range<3.2){ // channel traffic always matters, even passing 0.5 nm off
+    e.announced=true;if(P.m.night)e.lights=lightsWords(a,o);if(P.m.fog)e.spd0=o.v;P.sel=a.id;}
   e.minR=Math.min(e.minR,c.range);
   const dho=norm(o.th-e.h0); // ordered course change since the encounter began
   if(before){
@@ -159,7 +155,7 @@ function encTick(a,c){
 function wkGrade(e){
   if(e.done)return;e.done=true;e.doneT=P.time;const N=e.notes;let pts=0;
   if(!e.act&&e.actP)e.act=e.actP; // an order still held as she passed counts
-  if(!e.announced&&!e.collided&&!e.act){e.silent=true;e.pts=0;return;} // never a risk of collision, nothing done: nothing to judge
+  if(!e.announced&&!e.collided&&!e.act&&!e.cl.type.startsWith('chan')){e.silent=true;e.pts=0;return;} // never a risk of collision, nothing done: nothing to judge
   const add=(p,ok,txt,fix)=>{pts+=p;N.push({ok,txt,p,fix});};
   if(e.collided)add(-200,false,'Collision','Act earlier and make a bigger change of course or speed.');
   if(e.hintCost)N.push({ok:null,txt:'You used a hint (−20, already taken)',p:0});
@@ -267,5 +263,7 @@ function wkEnd(ok){
     chanHTML+shown.map(e=>`<div class="enc"><h4><span>${e.pts>=60?'✅':e.pts>=0?'⚠️':'❌'} ${esc(e.name)} · ${encTitle(e)}</span><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></h4>
       <div class="small" style="margin-bottom:4px">${roleLine(e)}</div>
       <ul>${e.notes.map(n=>`<li style="color:${n.ok===true?'#bfeccd':n.ok===false?'#ffb3b3':'#e8d9a8'}">${n.ok===true?'✓':n.ok===false?'✗':'💡'} ${n.txt}${n.p?` (${n.p>0?'+':''}${n.p})`:''}${n.fix?`<div class="fix">➜ ${esc(n.fix)}</div>`:''}</li>`).join('')}</ul></div>`).join('');
+  const mi=MISSIONS.findIndex(x=>x.id===P.m.id),nx=!P.m.endless&&mi>=0&&mi<5?MISSIONS[mi+1]:null;
+  $('dbMis').textContent=nx?`Next: ${nx.name} ›`:'Practice';$('dbMis').dataset.next=nx?nx.id:'';
   openOv('ovDebrief');
 }

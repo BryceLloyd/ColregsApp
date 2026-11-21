@@ -52,6 +52,14 @@ function wkDraw(){
     const e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);if(e||a.warnUntil>P.time){c.strokeStyle='rgba(255,90,90,.9)';c.lineWidth=1.5;c.beginPath();c.arc(s.x,s.y,16,0,7);c.stroke();}
     if(P.sel===a.id){c.strokeStyle='#ffd98a';c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.arc(s.x,s.y,20,0,7);c.stroke();c.setLineDash([]);}}
   ship(o,'#2b7de9',true);
+  // ships in an encounter that are still off the chart: an arrow on the edge, pointing at her, with her range
+  for(const a of P.ais){if(!P.encs.some(e=>e.id===a.id&&!e.done))continue;const s=S2(a),m=16;
+    if(s.x>m&&s.x<PW-m&&s.y>m&&s.y<PH-m)continue;
+    const dx=s.x-PW/2,dy=s.y-cy0,t=Math.min((PW/2-m)/Math.abs(dx||1e-9),(dy<0?cy0-m:PH-m-cy0)/Math.abs(dy||1e-9)),x=PW/2+dx*t,y=cy0+dy*t,ang=Math.atan2(dy,dx);
+    c.save();c.translate(x,y);c.rotate(ang);c.fillStyle=P.encs.some(e=>e.id===a.id&&!e.done&&e.announced)?'#ff8a8a':'#ffd98a';
+    c.beginPath();c.moveTo(9,0);c.lineTo(-5,-6);c.lineTo(-5,6);c.closePath();c.fill();c.restore();
+    c.fillStyle='#fff';c.font='bold 10.5px sans-serif';c.textAlign=x<PW/2-20?'left':x>PW/2+20?'right':'center';
+    c.fillText(`${a.name.replace('Ship ','')} ${dist(o,a).toFixed(1)}`,x+(x<PW/2-20?10:x>PW/2+20?-10:0),y+(y<cy0?20:-12));}
   // compass badge
   c.save();c.translate(20,22);c.fillStyle='rgba(5,12,24,.5)';c.beginPath();c.arc(0,0,15,0,7);c.fill();c.rotate(-o.h*D2R);
   c.fillStyle='#ff6b6b';c.beginPath();c.moveTo(0,-12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.fillStyle='rgba(255,255,255,.75)';c.beginPath();c.moveTo(0,12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.restore();
@@ -81,13 +89,15 @@ function wkUI(){
     card.innerHTML=`<b>${a.name}</b> · ${P.m.night?'Lights: see the bridge view':P.m.fog?'Radar contact only':WK_TYPES[wkType(a)].look||'No day shapes'}<br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
       (c.tcpa>0?`CPA ${c.cpa.toFixed(2)} nm in ${Math.max(0,c.tcpa*WK_TS/60).toFixed(1)} min`:'Opening — past CPA')+
       (risk?`<br><span style="color:#ff9a9a;font-weight:700">Risk of collision</span>`:'');}
+  // the Pass (overtaking signals) row only while you're overtaking in a channel
+  const over=P.chan&&P.encs.some(e=>!e.done&&e.announced&&e.cl.type==='chanover');if($('pHornChan').style.display!==(over?'flex':'none'))$('pHornChan').style.display=over?'flex':'none';
   // hint bar
   const act=P.encs.filter(e=>!e.done&&e.announced),h=$('pHint');
   if(fbHintBar(h))return renderToasts();
   if(act.length){const e=act[0];
     const key=e.id+(e.hinted?'h':'n')+P.hints;if(h.dataset.k===key)return renderToasts();h.dataset.k=key;
     if(e.hinted){h.className='';h.textContent='💡 '+encHint(e);}
-    else{h.className='risk';h.innerHTML=esc(encAlert(e))+(P.hints?` <button id="pHintBtn" style="margin-left:auto;flex:none;border:none;border-radius:8px;background:#5a4a12;color:#ffd98a;font-weight:700;padding:4px 8px;font-size:12px">💡 Hint −20</button>`:'');
+    else{h.className='risk';h.innerHTML=esc(encAlert(e))+(P.hints?` <button id="pHintBtn" class="hintBtn">💡 Hint −20</button>`:'');
       const hb=$('pHintBtn');if(hb)hb.onclick=()=>{e.hinted=true;P.score-=20;e.hintCost=true;popText('−20 hint',false);wkUI();};}}
   else{h.dataset.k='';h.className='calm';h.textContent=P.wpi<P.m.wps.length?`Steer for waypoint ${P.wpi+1}: ${String(Math.round(b)%360).padStart(3,'0')}°, ${d.toFixed(1)} nm.`:'';}
   renderToasts();
