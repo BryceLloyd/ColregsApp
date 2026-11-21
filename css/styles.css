@@ -140,6 +140,10 @@ input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);ba
 #pToast{position:absolute;left:44px;right:72px;top:8px;display:flex;flex-direction:column;gap:4px;align-items:center;pointer-events:none}
 .ptoast{background:rgba(5,12,24,.85);border-radius:10px;padding:5px 10px;font-size:12.5px;font-weight:600;max-width:100%;text-align:center}
 .ptoast.bad{color:#ff9a9a}.ptoast.ok{color:#7dffb0}.ptoast.info{color:#ffd98a}
+#pMute{position:absolute;right:8px;top:40px;border:none;border-radius:99px;background:rgba(5,12,24,.7);color:#fff;font-size:14px;padding:4px 9px}
+#pHint .sum{flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;cursor:pointer}
+#pHint .more,#pHint .go{flex:none;margin-left:6px;border:none;border-radius:8px;background:rgba(255,255,255,.12);color:inherit;font-weight:700;padding:5px 8px;font-size:12px}
+#pHint .go{background:#3d7bff;color:#fff;padding:5px 12px}
 #pRange{position:absolute;right:8px;top:8px;border:none;border-radius:99px;background:rgba(5,12,24,.7);color:#fff;font-size:12px;font-weight:700;padding:5px 10px}
 #pCard{position:absolute;right:8px;bottom:8px;background:rgba(10,20,36,.9);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:11.5px;line-height:1.45;min-width:150px;max-width:62%}
 #pCard b{font-size:12.5px}

@@ -57,7 +57,8 @@ function wkDraw(){
   c.fillStyle='#ff6b6b';c.beginPath();c.moveTo(0,-12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.fillStyle='rgba(255,255,255,.75)';c.beginPath();c.moveTo(0,12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.restore();
   if(P.fog)fogDraw(c,cy0,R);
   if(P.m.night)nightBridge();
-  if(P.paused){c.fillStyle='rgba(0,0,0,.45)';c.fillRect(0,0,PW,PH);c.fillStyle='#fff';c.font='bold 20px sans-serif';c.textAlign='center';c.fillText('⏸ Paused',PW/2,PH/2);}
+  popsDraw(c,PW/2,cy0);
+  if(P.paused&&!P.mistakePause){c.fillStyle='rgba(0,0,0,.45)';c.fillRect(0,0,PW,PH);c.fillStyle='#fff';c.font='bold 20px sans-serif';c.textAlign='center';c.fillText('⏸ Paused',PW/2,PH/2);}
 }
 let wkUIt=0;
 function wkUI(){
@@ -81,11 +82,12 @@ function wkUI(){
       (risk?`<br><span style="color:#ff9a9a;font-weight:700">Risk of collision</span>`:'');}
   // hint bar
   const act=P.encs.filter(e=>!e.done&&e.announced),h=$('pHint');
+  if(fbHintBar(h))return renderToasts();
   if(act.length){const e=act[0];
     const key=e.id+(e.hinted?'h':'n')+P.hints;if(h.dataset.k===key)return renderToasts();h.dataset.k=key;
     if(e.hinted){h.className='';h.textContent='💡 '+encHint(e);}
     else{h.className='risk';h.innerHTML=esc(encAlert(e))+(P.hints?` <button id="pHintBtn" style="margin-left:auto;flex:none;border:none;border-radius:8px;background:#5a4a12;color:#ffd98a;font-weight:700;padding:4px 8px;font-size:12px">💡 Hint −20</button>`:'');
-      const hb=$('pHintBtn');if(hb)hb.onclick=()=>{e.hinted=true;P.score-=20;e.hintCost=true;wkUI();};}}
+      const hb=$('pHintBtn');if(hb)hb.onclick=()=>{e.hinted=true;P.score-=20;e.hintCost=true;popText('−20 hint',false);wkUI();};}}
   else{h.dataset.k='';h.className='calm';h.textContent=P.wpi<P.m.wps.length?`Steer for waypoint ${P.wpi+1}: ${String(Math.round(b)%360).padStart(3,'0')}°, ${d.toFixed(1)} nm.`:'';}
   renderToasts();
 }

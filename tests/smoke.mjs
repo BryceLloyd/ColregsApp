@@ -234,6 +234,28 @@ ok(fog.good.role === 'fog' && fog.good.p.includes(20) && fog.good.p.includes(60)
    fog.fast.p.includes(-30) && /-60/.test(fog.fast.fogEnd) && fog.port.p.includes(-50) && fog.horn.p.includes(-10),
   `mission 5 fog: good ${JSON.stringify(fog.good.p)}, too fast ${JSON.stringify(fog.fast.p)}, port turn ${JSON.stringify(fog.port.p)}, manoeuvring signal ${JSON.stringify(fog.horn.p)}`);
 
+// 13. In-play feedback: floating points, the hint-bar verdict, optional pause on mistakes, the details card, mute.
+const fb = await page.evaluate(() => {
+  const keep = MISSIONS[0].enc, out = {};
+  const run = (pause, turn) => { $('pPauseErr').checked = pause; MISSIONS[0].enc = ['headon']; wkStart(MISSIONS[0]);
+    for (let i = 0; i < 6000 && !P.encs[0]?.done; i++) { const e = P.encs[0]; if (e?.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + turn); P.horn.push({ t: P.time, p: turn > 0 ? 'S' : 'SS' }); } wkTick(0.05); }
+    wkUI(); const h = $('pHint');
+    return { paused: P.paused, mp: P.mistakePause, pops: P.pops.map(p => p.txt), bar: h.textContent, why: !!h.querySelector('.more'), go: !!h.querySelector('.go'), card: $('pResult').style.display };
+  };
+  out.mistake = run(true, -50);
+  $('pHint').querySelector('.more').click(); out.cardOpen = $('pResult').style.display; $('pResGo').click(); out.afterClose = { paused: P.paused, mp: P.mistakePause, card: $('pResult').style.display };
+  out.noPause = run(false, -50);
+  out.good = run(true, 50);
+  out.labels = [popLabel('Turned to port in a head-on situation (Rule 14)'), popLabel('Safe passing distance (0.87 nm)'), popLabel('Early, substantial action 6 min before CPA, by course (Rules 8 & 16)'), popLabel('Correct sound signal • as you altered to starboard (Rule 34(a))'), popLabel('Stood on, then acted at 1.78 nm (Rule 17(a)(ii))')];
+  const m0 = muted; $('pMute').click(); out.mute = [m0, muted, $('pMute').textContent]; $('pMute').click();
+  $('pPauseErr').checked = true; MISSIONS[0].enc = keep; return out;
+});
+ok(fb.mistake.paused && fb.mistake.mp && fb.mistake.card === 'none' && fb.mistake.bar.startsWith('❌') && /Rule 14/.test(fb.mistake.bar) && fb.mistake.go &&
+   fb.mistake.pops.some(p => p.includes('Rule 14')) && fb.cardOpen === 'block' && !fb.afterClose.paused && !fb.afterClose.mp && fb.afterClose.card === 'none' &&
+   !fb.noPause.paused && fb.noPause.bar.startsWith('❌') && !fb.noPause.go && !fb.good.paused && fb.good.bar.startsWith('✅') &&
+   fb.labels.join('|') === 'Rule 14|Safe passing distance|Rules 8 & 16|Rule 34(a)|Rule 17(a)(ii)' && fb.mute[0] !== fb.mute[1],
+  `feedback: mistake pauses (setting on) and shows "${fb.mistake.bar.slice(0, 60)}…", pops ${JSON.stringify(fb.mistake.pops)}; setting off keeps playing; good run "${fb.good.bar.slice(0, 30)}…"`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }

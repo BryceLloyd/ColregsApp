@@ -42,7 +42,7 @@
   </header>
   <div class="meta" style="justify-content:space-between;flex:none"><span id="pWp"></span><span id="pTime"></span></div>
   <canvas id="pBridge" style="display:none"></canvas>
-  <div id="pStage"><canvas id="pcv"></canvas><div id="pToast"></div><button id="pRange">3 nm</button><div id="pCard"></div><div id="pResult"></div></div>
+  <div id="pStage"><canvas id="pcv"></canvas><div id="pToast"></div><button id="pRange">3 nm</button><button id="pMute" aria-label="Sound on">🔊</button><div id="pCard"></div><div id="pResult"></div></div>
   <div id="pHint" class="calm">Steer for the waypoint. Tap a ship to check her bearing and CPA.</div>
   <div class="pctl">
     <div class="pbox"><div class="lb2">Helm (autopilot)</div>
@@ -62,6 +62,7 @@
     <div class="note">Steer your own ship through real traffic to each waypoint. A referee judges every encounter against the Rules: <b>early, bold action</b> when you give way, <b>holding course and speed</b> when you stand on, the right <b>sound signals</b>, and a safe passing distance. Time runs 20× faster than real life.</div>
     <div class="note">⚙️ <b>Helm:</b> tap ↰10° / 10°↱ (hold to keep turning). <b>Engine:</b> astern to full ahead. <b>Horn:</b> • starboard, • • port, • • • astern, 5×• doubt. Tap any ship for her bearing trend and closest point of approach (CPA).</div>
     <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pHints" checked style="width:22px;height:22px"><span><b>Allow hints</b><br><span class="small">During an encounter you can tap 💡 to see your role and what to do, for −20 points. Off = no hints at all.</span></span></label>
+    <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pPauseErr" checked style="width:22px;height:22px"><span><b>Pause to explain mistakes</b><br><span class="small">In practice missions, stop the clock when you get something wrong, so you can read why before carrying on. Points and a one-line verdict always appear as you play.</span></span></label>
     <p class="small" style="margin:0">Buoyage region: <b>IALA Region A</b> (standard).</p>
     <div id="pMissions"></div>
   </div>
@@ -259,6 +260,7 @@
 <script src="js/18-watchkeeper-channel.js"></script>
 <script src="js/19-watchkeeper-night.js"></script>
 <script src="js/20-watchkeeper-fog.js"></script>
+<script src="js/21-watchkeeper-feedback.js"></script>
 <script src="js/99-boot.js"></script>
 </body>
 </html>

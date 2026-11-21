@@ -1,7 +1,8 @@
 // Horn and bell synthesis with Web Audio.
 // ---------- audio ----------
-let actx=null;
+let actx=null,muted=false;try{muted=localStorage.getItem('colregsMute')==='1';}catch(e){}
 function sound(p,vol=1){
+  if(muted)return;
   try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){return;}
   let tt=actx.currentTime+0.05;
   const horn=(at,d)=>{const g=actx.createGain(),f=actx.createBiquadFilter();f.type='lowpass';f.frequency.value=900;
