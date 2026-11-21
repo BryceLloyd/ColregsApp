@@ -56,14 +56,14 @@ function chanShip(p,h,v,extra){P.nid++;const a=Object.assign({id:P.nid,name:'Shi
 function chanSpawn(kind){
   let rogue=false;if(kind.endsWith('!')){rogue=true;kind=kind.slice(0,-1);}else if(kind.endsWith('?')){rogue=Math.random()<0.5;kind=kind.slice(0,-1);}
   const ch=P.m.chan,me=chanPos(ch,P.own);
-  if(kind==='chan:out'){const s=me.s+2.4,p=chanAt(ch,s,-ch.hw*0.45),h=norm(p.h+180);
+  if(kind==='chan:out'){const s=me.s+Math.max(2.4,wkView().ahead+0.3),p=chanAt(ch,s,-ch.hw*0.45),h=norm(p.h+180);
     chanShip(p,h,7+Math.random()*3,{state:'chan',chanS:s}).cl={type:'chan',role:'chan',rule:'Rule 9(a)'};}
-  else if(kind==='chan:cross'){const type=Math.random()<0.5?'sail':'fishing',side=Math.random()<0.5?1:-1,sc=me.s+2.0;
+  else if(kind==='chan:cross'){const type=Math.random()<0.5?'sail':'fishing',side=Math.random()<0.5?1:-1,sc=me.s+Math.max(2.0,wkView().ahead+0.2);
     const p=chanAt(ch,sc,side*(ch.hw+0.12)),end=chanAt(ch,sc,-side*(ch.hw+0.3)),h=brg(p,end);
     const e=chanShip(p,h,0,{type,state:'chancross',mode:'wait',rogue,sc,end,vgo:WK_TYPES[type].v});
     e.cl={type:'chancross',role:'chan',rule:type==='fishing'?'Rule 9(c)':'Rule 9(b)'};}
-  else if(kind==='chan:over'){const s=me.s+1.5,off=ch.hw*0.5,p=chanAt(ch,s,off);
-    chanShip(p,p.h,4,{state:'chanover',chanS:s,off}).cl={type:'chanover',role:'chan',rule:'Rule 9(e)'};}
+  else if(kind==='chan:over'){const s=me.s+Math.max(1.5,wkView().ahead+0.2),off=ch.hw*0.5,p=chanAt(ch,s,off);
+    chanShip(p,p.h,3,{state:'chanover',chanS:s,off}).cl={type:'chanover',role:'chan',rule:'Rule 9(e)'};}
 }
 function chanAiTick(a,dt){
   const ch=P.m.chan,o=P.own,e=P.encs.findLast(x=>x.id===a.id);

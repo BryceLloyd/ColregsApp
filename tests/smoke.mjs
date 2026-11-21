@@ -46,7 +46,7 @@ const wk = await page.evaluate(() => {
   for (let i = 0; i < 20000 && !P.over; i++) {
     const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
     if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { o.th = norm(e.h0 + (e.cl.type === 'overtaking' ? -40 : 50)); e.bot = 1; P.horn.push({ t: P.time, p: e.cl.type === 'overtaking' ? 'SS' : 'S' }); } }
-    else { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05);
   }
   return { over: P.over, hull: P.hull, score: P.score, encs: P.encs.length, bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length };
@@ -55,6 +55,7 @@ ok(wk.over && wk.hull === 3 && wk.bad === 0 && wk.score > 800, `watchkeeper good
 
 // 4. Watchkeeper: dropping back astern of a ship you're overtaking keeps clear and doesn't stall the mission.
 const back = await page.evaluate(() => {
+  const keep = MISSIONS[0].enc; MISSIONS[0].enc = ['overtaking', 'xstbd', 'headon']; // the ship to drop back from, then traffic must keep coming
   wkStart(MISSIONS[0]); const seen = new Set();
   for (let i = 0; i < 20000 && !P.over; i++) {
     const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
@@ -62,11 +63,12 @@ const back = await page.evaluate(() => {
       if (e.cl.type === 'overtaking' && !seen.has(e.id)) { seen.add(e.id); e.drop = 1; }
       if (e.drop) { o.tv = 4; o.th = P.ais.find(a => a.id === e.id).h; } // slow to her speed and follow in her wake
       else if (e.cl.role === 'give' && !e.bot) { o.tv = 12; o.th = norm(e.h0 + (e.cl.type === 'overtaking' ? -40 : 50)); e.bot = 1; P.horn.push({ t: P.time, p: e.cl.type === 'overtaking' ? 'SS' : 'S' }); } }
-    else { o.tv = 12; const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    else { o.tv = 12; { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05);
   }
   const d = P.encs.find(e => e.droppedBack);
-  return { over: P.over, hull: P.hull, spawned: P.spawnI, of: P.m.enc.length, dropPts: d ? d.pts : null, again: d ? P.encs.filter(e => e.id === d.id).length : 0 };
+  const res = { over: P.over, hull: P.hull, spawned: P.spawnI, of: P.m.enc.length, dropPts: d ? d.pts : null, again: d ? P.encs.filter(e => e.id === d.id).length : 0 };
+  MISSIONS[0].enc = keep; return res;
 });
 ok(back.over && back.hull === 3 && back.spawned === back.of && back.dropPts > 0 && back.again === 2,
   `watchkeeper drop-back: mission ends, ${back.spawned}/${back.of} ships spawned, drop-back scored ${back.dropPts}, re-encounter when passing later`);
@@ -90,10 +92,10 @@ const r18 = await page.evaluate(() => {
     for (let i = 0; i < 20000 && !P.over; i++) {
       const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
       if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { o.th = norm(e.h0 + 50); e.bot = 1; P.horn.push({ t: P.time, p: 'S' }); } }
-      else { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+      else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
       wkTick(0.05);
     }
-    runs.push({ t, n: P.encs.length, ok: P.hull === 3 && P.encs.every(e => e.cl.r18 && e.cl.role === 'give' && e.vt === t && !e.notes.some(n => n.ok === false)) });
+    runs.push({ t, n: P.spawnI, ok: P.hull === 3 && P.encs.every(e => e.cl.r18 && e.cl.role === 'give' && e.vt === t && !e.notes.some(n => n.ok === false)) }); // n = ships spawned (a ship can give a second encounter if you close on her again)
   }
   MISSIONS[0].enc = keep;
   return { wrong, bad: runs.filter(r => !r.ok || r.n !== 2).map(r => r.t) };
@@ -129,7 +131,7 @@ const m2 = await page.evaluate(() => {
     if (turnFor && turnFor.done) turnFor = null;
     for (const e of act) if (e.cl.role === 'give' && !e.bot) { e.bot = 1;
       if (!turnFor) { turnFor = e; const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
-    if (!act.length) { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    if (!act.length) { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05);
   }
   return { over: P.over, hull: P.hull, score: P.score, spawned: P.spawnI, groups: P.m.enc.length, encs: P.encs.length,
@@ -205,7 +207,7 @@ const night = await page.evaluate(() => {
   wkStart(MISSIONS[3]);
   for (let i = 0; i < 20000 && !P.over; i++) { const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
     if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); e.bot = 1; P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
-    else { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)]; o.th = brg(o, { x: wp[0], y: wp[1] }); }
+    else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05); if (i % 40 === 0) { wkDraw(); wkUI(); } }
   const me = { x: 0, y: 0, h: 0 }, sw = lightsWords({ type: 'fishing', x: 1, y: 1, h: 270 }, me), hd = lightsWords({ type: 'power', x: 0, y: 2, h: 180 }, me);
   return { over: P.over, hull: P.hull, n: P.encs.length, bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length,
@@ -274,6 +276,32 @@ const home = await page.evaluate(() => {
 ok(home.tiles.length === 6 && home.stars.join() === '3,0,1' && /No watch kept yet/.test(home.bestBefore) && home.started.endless && home.started.view === 'play' && /Endless/.test(home.started.title) &&
    home.lostHeart && home.res.over === true && /out of hearts/.test(home.res.head) && (home.res.score > 0 ? home.res.best === home.res.score && /best watch/.test(home.bestAfter) : true),
   `home & endless: ${home.tiles.length} practice tiles, stars ${home.stars.join('/')}; Play starts "${home.started.title}"; unattended watch ended at level ${home.res.level} (${home.res.score} pts): "${home.res.head}"`);
+
+// 15. Game feel: the helm keeps turning one way, collisions match the chart, ships start off-screen, waypoints count once passed.
+const feel = await page.evaluate(() => {
+  const snd = window.sound; window.sound = () => {}; const keep = MISSIONS[0].enc, out = {};
+  // hold the starboard helm while going astern (slow turning): the ship must never swing back to port
+  MISSIONS[0].enc = []; wkStart(MISSIONS[0]); P.own.v = P.own.tv = -4; P.own.tele = 0;
+  const btn = document.querySelector('.helm [data-dh="10"]'); let back = 0, turned = 0;
+  for (let i = 0; i < 400; i++) { if (i % 6 === 0 && i < 300) { btn.dispatchEvent(new PointerEvent('pointerdown')); btn.dispatchEvent(new PointerEvent('pointerup')); }
+    const h = P.own.h; wkTick(0.05); const d = norm(P.own.h - h); if (d < -0.01) back++; turned += d; }
+  out.helm = { back, turned: Math.round(turned) };
+  // a collision registers when the ships touch on the chart, and the other ship stays put
+  MISSIONS[0].enc = ['xport!']; wkStart(MISSIONS[0]); for (let i = 0; i < 6000 && !P.encs[0]?.done; i++) wkTick(0.05); // a rogue holds her course into you
+  out.coll = { hull: P.hull, booms: P.booms.length, stillThere: P.ais.length === 1, collided: P.encs[0].collided };
+  // every kind of ship starts beyond the edge of the chart
+  MISSIONS[0].enc = []; wkStart(MISSIONS[0]); out.offscreen = ['xstbd', 'xport', 'headon', 'overtaking', 'overtaken'].map(k => { spawnAI(k); return !inView(P.ais[P.ais.length - 1], 0); });
+  // a waypoint counts once you're past it, abeam within a mile, not only within 0.2 nm
+  const wp = P.m.wps[0], o = P.own, L = Math.hypot(wp[0], wp[1]), ux = wp[0] / L, uy = wp[1] / L;
+  const at = (along, side) => ({ x: wp[0] + ux * along + uy * side, y: wp[1] + uy * along - ux * side });
+  out.wp = [wpPassed(P.m, at(-0.3, 0.6)), wpPassed(P.m, at(0.05, 0.6)), wpPassed(P.m, at(0.05, 1.3))];
+  // a ship that's stopped barely turns
+  o.x = o.y = 0; o.v = o.tv = 0; const h0 = o.h; o.th = norm(o.h + 90); for (let i = 0; i < 40; i++) wkTick(0.05); out.stoppedTurn = Math.abs(norm(o.h - h0));
+  MISSIONS[0].enc = keep; window.sound = snd; return out;
+});
+ok(feel.helm.back === 0 && feel.helm.turned > 100 && feel.coll.collided && feel.coll.hull === 2 && feel.coll.booms === 1 && feel.coll.stillThere &&
+   feel.offscreen.every(Boolean) && feel.wp.join() === 'false,true,false' && feel.stoppedTurn < 2,
+  `game feel: helm held astern turned ${feel.helm.turned}° without swinging back; collision ${JSON.stringify(feel.coll)}; ships start off-screen ${feel.offscreen.join('/')}; waypoint passed abeam ${feel.wp.join('/')}; stopped ship turned ${feel.stoppedTurn.toFixed(1)}°`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
