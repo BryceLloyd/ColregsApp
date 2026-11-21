@@ -86,18 +86,22 @@ function wkUI(){
   else{card.style.display='block';const c=cpaOf(o,a),bb=(brg(o,a)+360)%360;
     let trend='—';if(a.bh.length>3){const db=norm(a.bh[a.bh.length-1].b-a.bh[0].b);trend=Math.abs(db)<1.2?(cpaOf(o,a).tcpa>0?'<span style="color:#ff9a9a">steady ⚠</span>':'steady (opening)'):db>0?'drawing right':'drawing left';}
     const risk=c.cpa<(P.chan?0.12:0.4)&&c.tcpa>0&&c.range<3.5, /* in a channel, passing 0.2 nm off port to port is normal */e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);
-    card.innerHTML=`<b>${a.name}</b> · ${P.m.night?'Lights: see the bridge view':P.m.fog?'Radar contact only':WK_TYPES[wkType(a)].look||'No day shapes'}<br>Brg ${String(Math.round(bb)%360).padStart(3,'0')}° · ${trend}<br>Range ${c.range.toFixed(2)} nm<br>`+
-      (c.tcpa>0?`CPA ${c.cpa.toFixed(2)} nm in ${Math.max(0,c.tcpa*WK_TS/60).toFixed(1)} min`:'Opening — past CPA')+
-      (risk?`<br><span style="color:#ff9a9a;font-weight:700">Risk of collision</span>`:'');}
+    const look=!P.m.night&&!P.m.fog&&WK_TYPES[wkType(a)].look; // day shapes only; at night her lights are in the bridge view
+    card.className=risk?'risk':'';
+    card.innerHTML=`<b>${a.name}</b> ${String(Math.round(bb)%360).padStart(3,'0')}° ${trend} · ${c.range.toFixed(1)} nm<br>`+
+      (c.tcpa>0?`CPA ${c.cpa.toFixed(2)} nm in ${Math.max(0,c.tcpa*WK_TS/60).toFixed(0)} min`:'Opening, past CPA')+(risk?' <span class="rk">⚠ risk</span>':'')+
+      (look?`<br><span class="lk">${look}</span>`:'');}
   // the Pass (overtaking signals) row only while you're overtaking in a channel
   const over=P.chan&&P.encs.some(e=>!e.done&&e.announced&&e.cl.type==='chanover');if($('pHornChan').style.display!==(over?'flex':'none'))$('pHornChan').style.display=over?'flex':'none';
   // hint bar
   const act=P.encs.filter(e=>!e.done&&e.announced),h=$('pHint');
   if(fbHintBar(h))return renderToasts();
   if(act.length){const e=act[0];
-    const key=e.id+(e.hinted?'h':'n')+P.hints;if(h.dataset.k===key)return renderToasts();h.dataset.k=key;
-    if(e.hinted){h.className='';h.textContent='💡 '+encHint(e);}
-    else{h.className='risk';h.innerHTML=esc(encAlert(e))+(P.hints?` <button id="pHintBtn" class="hintBtn">💡 Hint −20</button>`:'');
+    // how far you've altered since she appeared: a fact about your own ship, not advice
+    const dd=Math.round(norm(o.th-e.h0)),dv=Math.round(o.tv-e.v0),you=Math.abs(dd)>=5||Math.abs(dv)>=1?`<span class="you">You: ${Math.abs(dd)>=5?`${dd>0?'+':'−'}${Math.abs(dd)}°`:''}${Math.abs(dd)>=5&&Math.abs(dv)>=1?', ':''}${Math.abs(dv)>=1?`${o.tv.toFixed(0)} kn`:''}</span>`:'';
+    const key=e.id+(e.hinted?'h':'n')+P.hints+you;if(h.dataset.k===key)return renderToasts();h.dataset.k=key;
+    if(e.hinted){h.className='';h.textContent='💡 '+encHint(e);h.insertAdjacentHTML('beforeend',you);}
+    else{h.className='risk';h.innerHTML=`<span class="al">${esc(encAlert(e))}${you}</span>`+(P.hints?` <button id="pHintBtn" class="hintBtn" aria-label="Hint, costs 20 points">💡 −20</button>`:'');
       const hb=$('pHintBtn');if(hb)hb.onclick=()=>{e.hinted=true;P.score-=20;e.hintCost=true;popText('−20 hint',false);wkUI();};}}
   else{h.dataset.k='';h.className='calm';h.textContent=P.wpi<P.m.wps.length?`Steer for waypoint ${P.wpi+1}: ${String(Math.round(b)%360).padStart(3,'0')}°, ${d.toFixed(1)} nm.`:'';}
   renderToasts();

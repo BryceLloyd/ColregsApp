@@ -29,7 +29,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
 - Watchkeeper (`15-…`): `MISSIONS`. `m1`–`m6` are the practice missions; `m7` is endless.
   - `classify(me, target)` decides head-on, crossing, or overtaking, and from that give-way or stand-on.
   - `encTick` and `wkGrade` are the referee. An encounter is created when a ship spawns, and its baseline is your ordered course and speed at that moment.
-  - Only actions taken before CPA count. Actions count from the moment they're ordered, but only if the order is held for 1.5 real s (`e.actP` → `e.act`), so a flick of the helm isn't "substantial action".
+  - Only actions taken before CPA count. Actions count from the moment they're ordered, but only if the order is held for 1.5 real s (`e.actP` → `e.act`), so a flick of the helm isn't "substantial action". Substantial = 30°+ from the course at spawn or speed halved. A smaller alteration held 1.5 s (`e.partD`, `e.partCut`) is named on the card: 15–29° or a 25–49% speed cut −40 (Rules 8(b) & 16), less than that −100. While an encounter is on, the hint bar shows "You: +20°, 6 kn" (your own alteration since she appeared: a fact, not advice), the 💡 −20 hint is a small outline chip, and the target card is compact.
   - An encounter that never raised an alert (never a risk of collision) and that you took no action for closes quietly (`e.silent`): not scored, not in the debrief, not counted for endless levels.
   - No toasts during an encounter that reveal your role or the answer; verdicts come only after it (content rule).
   - Overtaking: slowing to her speed or less and not closing for 3 s closes the encounter as kept clear (`droppedBack`). If you later close in on her again, one new encounter opens for that ship.
