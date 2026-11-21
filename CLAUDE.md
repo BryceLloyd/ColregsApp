@@ -13,7 +13,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
   - Keep top-level code that runs at load time in the right order. Add new files with a number that places them correctly.
   - Function bodies can reference anything, because they run later.
   - When you add a file, also add it to `index.html` and to `FILES` in `sw.js`.
-- **Views:** `#home`, `#sec` (learning sections), `#app` (scenario simulator), `#play` (Watchkeeper). Switch between them with `show(name)`. Overlays (`.ov`) open with `openOv(id)` and close with `closeOv(id)`.
+- **Views:** `#home` (Watchkeeper-first: best endless watch, big Play, practice missions, then Challenge and the learning sections), `#sec` (learning sections), `#app` (scenario simulator), `#play` (Watchkeeper). Switch between them with `show(name)`. Overlays (`.ov`) open with `openOv(id)` and close with `closeOv(id)`.
 - **One animation loop:** `loop()` in `13-sim-flow.js`. It drives the simulator when `view==='app'` and calls `wkFrame()` when `view==='play'`. It also ticks buoy-light animation.
 
 ## Key data (append, don't reorder)
@@ -24,7 +24,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
 - `LEVELS` (`02-…`): Challenge levels. `sims` scenarios are drawn from `pool`, plus multiple-choice questions from `mcq: [[kind, n, topic]]`.
 - `RULEQ`, `LIGHTQ`, `SPOT`, `ORDERQ`: question banks. `makeQs(kind, n, topic)` mixes formats.
 - `BUOYS` (`06-buoyage.js`): IALA marks. **`REGION = 'A'` is the standard** (South Africa). Region B appears only as a Learn toggle and in one labelled scenario.
-- Watchkeeper (`15-…`): `MISSIONS`. `m1` to `m6` are `ready`; `m7` (Endless) isn't built yet.
+- Watchkeeper (`15-…`): `MISSIONS`. `m1`–`m6` are the practice missions; `m7` is endless.
   - `classify(me, target)` decides head-on, crossing, or overtaking, and from that give-way or stand-on.
   - `encTick` and `wkGrade` are the referee. An encounter is created when a ship spawns, and its baseline is your ordered course and speed at that moment.
   - Only actions taken before CPA count. Actions count from the moment they're ordered.
@@ -40,6 +40,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
   - Night missions (`19-watchkeeper-night.js`, `m4`): `night:true` turns the chart into radar (other ships are anonymous echoes: no hull, heading line, trail or day shapes) and shows the `#pBridge` strip above it: each ship within 5 nm and 90° of your bow drawn with `lightsSeen()` at her relative bearing. At the alert, `lightsWords()` records what lights she showed and what they mean; the result card shows it. Don't put "being overtaken" in a night mission: she'd be behind you, out of the bridge view.
   - Fog missions (`20-watchkeeper-fog.js`, `m5`): `fog:true` = radar echoes only (no bridge view), start at half speed. Every encounter becomes `cl.type 'fog'` (geometry kept in `e.geo`): no stand-on or give-way, and no Rule 34(a) signals or Rule 18. `fogGrade`: safe speed at detection ≤ `FOG_SAFE` +20 / −30; avoiding action in ample time +60 (later +30, none −80; staying at steerage way and passing 0.4 nm+ clear +30); a port turn for a ship forward of the beam (unless overtaking her) or a turn towards one abeam/abaft (not dead astern) −50 (Rule 19(d)); after hearing her fog signal forward of the beam while she's closing (`heardT`), ordered speed ≤ `FOG_STEER` +30 / −30 (19(e)); any •, • • or • • • −10. Your fog signal is an automatic controller toggled by `#pFogBtn` (▬ every 2 min making way, ▬ ▬ stopped; Rule 35); the debrief scores time on (90%+ +60, 50%+ 0, else −60). Other ships sound ▬ (power) or ▬ • • (special types) every 2 min, heard within 2 nm and shown on the chart at a fuzzy bearing; in fog they act too (starboard for a ship forward of their beam).
   - In-play feedback (`21-watchkeeper-feedback.js`): the result card no longer pops up by itself. When an encounter is graded, `showResult` floats each scoring note up from your ship (`popText`, e.g. "+25 Rule 13", label from the note's last "(Rule …)" via `popLabel`) and puts a one-line verdict in the hint bar for 8 s (worst mistake or "well handled"); tapping it opens the full card (`openResult`, pauses while open). With "Pause to explain mistakes" on (default, `localStorage wkPauseErr`) a mistake pauses the game without covering the chart; ▶ in the hint bar resumes. Never pauses when `P.m.endless`. `muted` (05-audio, `#pMute`, `localStorage colregsMute`) silences all sounds. Waypoints, bend signals, hints, groundings and collisions also pop.
+  - Home & endless (`22-watchkeeper-home.js`): `renderHome()` runs on every `show('home')`: best endless score and level, and a practice tile per mission from `MISSION_META` (icon, what it trains, rules, `ref` score). Stars from the saved best: 1 for finishing, 2 at 60% of `ref`, 3 at 85%. Endless (`m7`, `endless:true`) copies the mission in `endlessSetup`, extends the route as you go (`endlessExtend`), and `endlessFeed` queues one ship at a time from every `ENDLESS_LEVELS` entry unlocked so far (a level per 5 finished encounters; later levels shorten the spawn gap `m.gap`). Traffic spawns wherever you're heading. Hearts: a collision, or any encounter scoring below zero, costs one; 5 clean encounters in a row win one back (max 3). Never pauses. Best score and level saved as `wkBest_m7` and `wkBestLevel`.
   - Time scale: `WK_TS = 20` (×20 real time).
 
 ## Content rules
@@ -73,7 +74,10 @@ Watchkeeper stages, in order:
 4. Restricted visibility, in parts:
    - 4a ✅ Mission 4 (Night passage): radar echoes on the chart, lights in a bridge view, lights explained after each encounter.
    - 4b ✅ Mission 5 (Fog): radar only, fog signals (Rule 35), conduct in restricted visibility with no stand-on or give-way roles (Rule 19).
-5. Endless mode and Watchkeeper leaderboards (Supabase).
+5. Endless mode and Watchkeeper leaderboards, in parts:
+   - 5a ✅ Watchkeeper-first home page, in-play feedback (floating points, hint-bar verdicts, optional pause), endless mode with levels and hearts.
+   - 5b "Your weak rules" stats on the home page, time-speed setting, first-launch guide.
+   - 5c Shared Watchkeeper leaderboard (Supabase), when wanted.
 
 Known issues and ideas:
 - Watchkeeper on small phones (320 px, iPhone SE 1st gen): the engine panel's Full button is cut off at the right edge.

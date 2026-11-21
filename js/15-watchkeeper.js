@@ -15,7 +15,7 @@ const MISSIONS=[
   wps:[[0.6,5],[3.6,8.6],[3.0,13.2],[6.4,16.4]],enc:['headon','xstbd','xport','overtaken','headon:r18','xstbd:r18','overtaking'],par:570,ready:true},
  {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules. Stand on, sound five short when in doubt, and act when you must (Rules 17 & 34(d)).',wps:[[0.5,5],[-2.5,9],[0,13.5],[-1.5,18],[1.5,21.5]],
   enc:['xport','xport!','xstbd','overtaken?','xport?','headon','overtaken!','xport?'],par:510,ready:true},
- {id:'m7',name:'Endless',desc:'Survive as the traffic builds.'}];
+ {id:'m7',name:'Endless',desc:'Keep the watch as the traffic builds. Lose a heart for each collision or bad call; five clean encounters win one back.',endless:true,ready:true,wps:[[0.6,5]],enc:[]}];
 const HORN_WIN=8; // a manoeuvring signal counts if it's sounded within this many real seconds of the manoeuvre (Rule 34(a))
 const ROGUE_AFTER=3; // real seconds after a compliant ship would have acted: by then it's clear she isn't (Rule 17(a)(ii))
 const ENC_LABEL={chan:'Meeting in the channel',chancross:'Small craft at the channel',chanover:'Overtaking in the channel',headon:'Head-on',xstbd:'Crossing from starboard',xport:'Crossing from port',overtaking:'You overtaking',overtaken:'Being overtaken'};
@@ -46,13 +46,14 @@ function wkOpen(){
   openOv('ovPlay');
 }
 function wkStart(m){
+  if(m.endless)m=endlessSetup(m);
   const wp=m.wps[0],h0=Math.round(brg({x:0,y:0},{x:wp[0],y:wp[1]}));
   P={m,own:{x:0,y:0,h:h0,th:h0,v:12,tv:12,tele:4,trail:[]},ais:[],encs:[],wpi:0,score:0,hull:3,time:0,horn:[],turns:[],refTh:h0,spawnI:0,lastSpawn:-8,
      sel:null,range:3,hints:$('pHints').checked,paused:false,over:false,nid:0,toasts:[],trailT:0,pops:[],lastRes:null,mistakePause:false};$('pResult').style.display='none';
   P.chan=chanInit(m);$('pHornChan').style.display=m.chan?'flex':'none';$('pBridge').style.display=m.night?'block':'none';
   P.fog=fogInit(m);$('pFog').style.display=m.fog?'flex':'none';fogUI();
   if(m.fog){P.own.v=P.own.tv=TELE[3].v;P.own.tele=3;P.lastSpawn=4;} // fog: start at half speed, with a moment before the first ship
-  $('pTitle').textContent=`${MISSIONS.indexOf(m)+1} · ${m.name}`;$('pPause').textContent='⏸';
+  $('pTitle').textContent=m.endless?'⚓ Endless · level 1':`${MISSIONS.findIndex(x=>x.id===m.id)+1} · ${m.name}`;P.level=0;P.streak=0;$('pPause').textContent='⏸';
   $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}">${x.l}</button>`).join('');
   $('pTele').querySelectorAll('button').forEach(b=>b.onclick=()=>{P.own.tele=+b.dataset.i;P.own.tv=TELE[P.own.tele].v;wkUI();});
   show('play');wkResize();wkUI();wkToast('Steer for waypoint 1 ⚑','info');if(m.fog)wkToast('🌫 Fog: you can see less than half a mile. Radar only.','info');
@@ -223,11 +224,12 @@ function wkTick(dt){
     if(c.tcpa<=0&&le?.droppedBack)return false;
     if(le?.done&&(c.tcpa<=0||c.cpa>=0.5)&&c.range>=0.5)return false; // dealt with and passing clear: doesn't hold up new traffic
     return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
-  const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0;
-  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>3&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const g=m.enc[P.spawnI++];[].concat(g).forEach((k,i)=>spawnAI(k,GROUP_T[i]));P.lastSpawn=P.time;}
+  const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&(m.endless||Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0); // endless: traffic finds you wherever you steer
+  if(m.endless)endlessFeed();
+  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&P.time-P.lastSpawn>(m.gap??3)&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const g=m.enc[P.spawnI++];[].concat(g).forEach((k,i)=>spawnAI(k,GROUP_T[i]));P.lastSpawn=P.time;}
   // waypoints
   const wp=m.wps[P.wpi];
-  if(P.chan?chanPos(P.m.chan,o).s>=P.chan.wpS[P.wpi]:Math.hypot(wp[0]-o.x,wp[1]-o.y)<0.2){P.score+=50;P.wpi++;
+  if(P.chan?chanPos(P.m.chan,o).s>=P.chan.wpS[P.wpi]:Math.hypot(wp[0]-o.x,wp[1]-o.y)<0.2){P.score+=50;P.wpi++;if(m.endless)endlessExtend();
     popText('+50 waypoint',true);if(P.wpi>=m.wps.length)return wkEnd(true);wkToast(`⚑ Waypoint ${P.wpi} reached (+50). Next: waypoint ${P.wpi+1}`,'ok');}
   if(P.hull<=0)return wkEnd(false);
   P.toasts=P.toasts.filter(x=>P.time-x.t<7);
@@ -240,6 +242,7 @@ function wkEnd(ok){
   $('dbHead').textContent=ok?'⚓ Mission complete':'💥 Mission failed — out of hull';
   $('dbScore').textContent=`${P.score} pts`;
   $('dbSub').textContent=`${P.m.name} · ${gclock(P.time)} at sea · hull ${'❤️'.repeat(Math.max(0,P.hull))}${ok?` · bonus +${bonus}`:''}`;
+  if(P.m.endless)endlessEnd(); // endless: its own heading, subtitle and best score
   const good=P.encs.filter(e=>e.pts>=60).length;
   $('dbList').innerHTML=`<p class="small" style="margin:4px 2px 8px">${P.encs.length} encounters · ${good} handled well. Here's how each one went:</p>`+
     chanHTML+P.encs.map(e=>`<div class="enc"><h4><span>${e.pts>=60?'✅':e.pts>=0?'⚠️':'❌'} ${esc(e.name)} · ${encTitle(e)}</span><span style="color:${e.pts>=0?'var(--ok)':'var(--bad)'}">${e.pts>=0?'+':''}${e.pts}</span></h4>

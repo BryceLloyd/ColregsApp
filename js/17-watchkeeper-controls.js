@@ -16,6 +16,6 @@ $('pcv').addEventListener('click',ev=>{if(!P)return;const r=$('pcv').getBounding
 let pHomeArmed=false;
 $('pHome').onclick=()=>{if(P&&!P.over&&!pHomeArmed){pHomeArmed=true;wkToast('Tap 🏠 again to abandon the mission','info');setTimeout(()=>pHomeArmed=false,2500);return;}pHomeArmed=false;P=null;show('home');};
 $('dbRetry').onclick=()=>{const m=P.m;closeOv('ovDebrief');wkStart(m);};
-$('dbMis').onclick=()=>{closeOv('ovDebrief');P=null;show('home');wkOpen();};
+$('dbMis').onclick=()=>{closeOv('ovDebrief');P=null;show('home');};
 $('dbHome').onclick=()=>{closeOv('ovDebrief');P=null;show('home');};
 $('goPlay').onclick=wkOpen;

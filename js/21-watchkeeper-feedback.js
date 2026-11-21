@@ -34,7 +34,7 @@ function popsDraw(c,x,y){
 
 // ---- after each encounter: points float up, the verdict goes in the hint bar ----
 function showResult(e){
-  popPoints(e);P.lastRes={e,t:P.time};
+  popPoints(e);P.lastRes={e,t:P.time};if(P.m.endless)endlessAfter(e);
   if(e.notes.some(n=>n.ok===false)&&pauseOnMistakes()){P.paused=true;P.mistakePause=true;$('pPause').textContent='▶';}
   const h=$('pHint');if(h)h.dataset.k='';
 }

@@ -19,15 +19,25 @@
 
 <!-- HOME -->
 <div class="view" id="home">
-  <div class="hero"><div class="a">⚓</div><h2>COLREGs Trainer</h2><p>Learn the Rules of the Road, then prove it.</p></div>
-  <button class="tile main" id="goChallenge"><span class="e">🏆</span><span><b>Challenge</b><br><small style="color:#cfe2ff">Random scenarios · 7 levels, each harder · 3 lives · leaderboard</small></span></button>
-  <button class="tile main wk" id="goPlay"><span class="e">🧭</span><span><b>Watchkeeper · free play</b><br><small style="color:#c8f0e2">Steer your own ship through traffic. Every move judged on the Rules.</small></span></button>
-  <div class="grid2">
-    <button class="tile" data-sec="rules"><span class="e">🚢</span><b>Rules &amp; scenarios</b><small>Steering &amp; sailing rules + scenarios</small></button>
-    <button class="tile" data-sec="lights"><span class="e">💡📯</span><b>Lights &amp; sounds</b><small>Lights, shapes, sound signals + night &amp; fog scenarios</small></button>
-    <button class="tile" data-sec="buoys"><span class="e">🛟</span><b>Buoyage</b><small>IALA marks + buoyage scenarios</small></button>
-    <button class="tile" data-sec="flags"><span class="e">🚩</span><b>Signal flags</b><small>A–Z code flags + quiz</small></button>
-    <button class="tile" id="homeLb" style="grid-column:span 2"><span class="e">🏆</span><b>Leaderboard</b><small>Who's top of the fleet?</small></button>
+  <div class="hhead"><span class="a">⚓</span><b>COLREGs Trainer</b><button class="ib" id="goPlay" aria-label="How to play and settings">⚙️</button></div>
+  <div class="scroll stack" id="homeScroll">
+    <div class="wkHero">
+      <div class="t">🧭 Watchkeeper</div>
+      <div class="s">Take the watch in endless traffic. Every encounter is judged against the Rules. Lose a heart for each collision or bad call.</div>
+      <div class="best" id="wkBest"></div>
+      <button class="playBig" id="wkPlay">⚓ Play</button>
+    </div>
+    <h3 class="sh">Practice</h3>
+    <div class="grid2" id="wkPractice"></div>
+    <h3 class="sh">More</h3>
+    <button class="tile" id="goChallenge"><span class="e">🏆</span><b>Challenge</b><small>Random scenarios and questions · 7 levels · 3 lives · leaderboard</small></button>
+    <div class="grid2">
+      <button class="tile" data-sec="rules"><span class="e">🚢</span><b>Rules &amp; scenarios</b><small>Steering &amp; sailing rules + scenarios</small></button>
+      <button class="tile" data-sec="lights"><span class="e">💡📯</span><b>Lights &amp; sounds</b><small>Lights, shapes, sound signals + night &amp; fog scenarios</small></button>
+      <button class="tile" data-sec="buoys"><span class="e">🛟</span><b>Buoyage</b><small>IALA marks + buoyage scenarios</small></button>
+      <button class="tile" data-sec="flags"><span class="e">🚩</span><b>Signal flags</b><small>A–Z code flags + quiz</small></button>
+      <button class="tile" id="homeLb" style="grid-column:span 2"><span class="e">🏆</span><b>Challenge leaderboard</b><small>Who's top of the fleet?</small></button>
+    </div>
   </div>
 </div>
 
@@ -75,7 +85,7 @@
     <div class="big center" id="dbScore"></div>
     <div class="center small" id="dbSub"></div>
     <div id="dbList"></div>
-    <div class="row"><button class="btn" id="dbRetry">Sail again</button><button class="btn sec" id="dbMis">Missions</button></div>
+    <div class="row"><button class="btn" id="dbRetry">Sail again</button><button class="btn sec" id="dbMis">Practice</button></div>
     <button class="btn sec" id="dbHome">🏠 Home</button>
   </div>
 </div></div>
@@ -261,6 +271,7 @@
 <script src="js/19-watchkeeper-night.js"></script>
 <script src="js/20-watchkeeper-fog.js"></script>
 <script src="js/21-watchkeeper-feedback.js"></script>
+<script src="js/22-watchkeeper-home.js"></script>
 <script src="js/99-boot.js"></script>
 </body>
 </html>
