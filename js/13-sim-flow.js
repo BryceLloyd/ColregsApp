@@ -2,7 +2,11 @@
 // ---------- loop ----------
 let last=performance.now();
 function loop(now){
+  requestAnimationFrame(loop); // schedule the next frame first, so an error in this one can't stop the app
   const dt=Math.min(0.05,(now-last)/1000);last=now;
+  try{frame(now,dt);}catch(err){if(!loop.warned){loop.warned=true;console.error(err);}}
+}
+function frame(now,dt){
   if(view!=='home')tickLights(now);
   if(view==='app'&&running&&!paused){gameTime+=dt;$('clock').textContent=fmt(gameTime);}
   if(view==='app'&&sc){
@@ -15,7 +19,6 @@ function loop(now){
     draw();
   }
   if(view==='play')wkFrame(dt);
-  requestAnimationFrame(loop);
 }
 function finishOutcome(){
   const wrong=choice&&sc&&!sc.correct.includes(choice);
@@ -87,7 +90,7 @@ $('endHome').onclick=()=>{closeOv('ovEnd');show('home');};
 $('homeLb').onclick=()=>openOv('ovLb');
 
 $('shareBtn').onclick=async()=>{
-  const msg=`⚓ I got ${score} right and reached level ${level} of ${LEVELS.length} in ${fmt(gameTime)} on the COLREGs Trainer. Think you know the Rules of the Road better? ${LINK}`;
+  const msg=`⚓ I got ${score} right and reached level ${level} of ${LEVELS.length} in ${fmt(gameTime)} on the COLREGs Trainer. Think you know the rules of the road better? ${LINK}`;
   try{await navigator.clipboard.writeText(msg);$('shareBtn').textContent='✅ Copied — paste it to your friends';}
   catch(e){const b=$('copyBox');b.style.display='block';b.value=msg;b.focus();b.select();$('shareBtn').textContent='Copy the text below';}
 };

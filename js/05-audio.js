@@ -1,9 +1,15 @@
 // Horn and bell synthesis with Web Audio.
 // ---------- audio ----------
 let actx=null,muted=false;try{muted=localStorage.getItem('colregsMute')==='1';}catch(e){}
+function audioCtx(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state!=='running')actx.resume();}catch(e){}return actx;}
+// iOS only starts audio inside a user gesture: unlock it on the first touch with a silent buffer.
+function unlockAudio(){const c=audioCtx();if(!c)return;try{const s=c.createBufferSource();s.buffer=c.createBuffer(1,1,22050);s.connect(c.destination);s.start(0);}catch(e){}
+  if(c.state==='running')['pointerdown','touchend','click'].forEach(ev=>document.removeEventListener(ev,unlockAudio,true));}
+['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,unlockAudio,true));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&actx&&actx.state!=='running')try{actx.resume();}catch(e){}});
 function sound(p,vol=1){
   if(muted)return;
-  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){return;}
+  if(!audioCtx())return;
   let tt=actx.currentTime+0.05;
   const horn=(at,d)=>{const g=actx.createGain(),f=actx.createBiquadFilter();f.type='lowpass';f.frequency.value=900;
     g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(0.22*vol,at+0.04);g.gain.setValueAtTime(0.22*vol,at+d-0.06);g.gain.linearRampToValueAtTime(0,at+d);

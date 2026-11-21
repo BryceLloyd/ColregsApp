@@ -178,6 +178,7 @@ input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);ba
 .tele{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
 .tele button{height:44px;border-radius:8px;border:1px solid var(--line);background:#1b3150;color:var(--ink);font-size:10.5px;font-weight:700;padding:0}
 .tele button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.pctl button,.phorn button,#pRange,#pMute{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .phorn{flex:none;display:flex;gap:5px;align-items:center}
 .phorn span{font-size:11px;color:var(--mut);width:34px}
 .phorn #pFogBtn{font-size:12px;letter-spacing:0;font-weight:700}.phorn #pFogBtn.on{background:#1f6b3f;border-color:#2f9a5c}

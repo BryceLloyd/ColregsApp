@@ -1,8 +1,10 @@
 // Watchkeeper controls: helm, engine, horn, range, pause, navigation.
 // ---------- controls ----------
 let helmTimer=null;
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&P&&!P.over&&view==='play'&&!P.paused){P.paused=true;$('pPause').textContent='▶';clearInterval(helmTimer);}});
+if(window.ResizeObserver)new ResizeObserver(()=>{if(view==='play'&&P)wkResize();}).observe($('pStage'));
 document.querySelectorAll('.helm [data-dh]').forEach(b=>{
-  const step=()=>{if(!P||P.over)return;const o=P.own,lead=Math.max(-170,Math.min(170,norm(o.th-o.h)+(+b.dataset.dh)));o.th=norm(o.h+lead);wkUI();}; // capped at 170° ahead so holding the helm keeps turning the same way
+  const step=()=>{if(!P||P.over||P.paused)return;const o=P.own,lead=Math.max(-170,Math.min(170,norm(o.th-o.h)+(+b.dataset.dh)));o.th=norm(o.h+lead);wkUI();}; // capped at 170° ahead so holding the helm keeps turning the same way
   b.addEventListener('pointerdown',e=>{e.preventDefault();step();clearInterval(helmTimer);helmTimer=setInterval(step,320);});
   ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearInterval(helmTimer)));
 });

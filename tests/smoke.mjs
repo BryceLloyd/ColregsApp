@@ -12,6 +12,8 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const page = await browser.newPage({ viewport: { width: 375, height: 667 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
+// Seeded random numbers: every run plays the same traffic, so results repeat exactly (stress runs elsewhere stay random).
+await page.addInitScript(() => { let s = 20261121; Math.random = () => (s = (s * 16807) % 2147483647) / 2147483647; });
 await page.goto(url);
 await page.waitForTimeout(300);
 
@@ -232,8 +234,8 @@ const fog = await page.evaluate(() => {
   run('horn', ['xstbd'], { signal: true, turn: 50, slow: true, horn: 'S' });
   MISSIONS[4].enc = keep; window.sound = snd; return out;
 });
-ok(fog.good.role === 'fog' && fog.good.p.includes(20) && fog.good.p.includes(60) && !fog.good.p.some(p => p < 0) && /\+60/.test(fog.good.fogEnd) &&
-   fog.fast.p.includes(-30) && /-60/.test(fog.fast.fogEnd) && fog.port.p.includes(-50) && fog.horn.p.includes(-10),
+ok(fog.good.role === 'fog' && fog.good.p.includes(20) && fog.good.p.includes(60) && !fog.good.p.some(p => p < 0) && /\+100/.test(fog.good.fogEnd) &&
+   fog.fast.p.includes(-30) && /-100/.test(fog.fast.fogEnd) && fog.port.p.includes(-50) && fog.horn.p.includes(-10),
   `mission 5 fog: good ${JSON.stringify(fog.good.p)}, too fast ${JSON.stringify(fog.fast.p)}, port turn ${JSON.stringify(fog.port.p)}, manoeuvring signal ${JSON.stringify(fog.horn.p)}`);
 
 // 13. In-play feedback: floating points, the hint-bar verdict, optional pause on mistakes, the details card, mute.
@@ -302,6 +304,45 @@ const feel = await page.evaluate(() => {
 ok(feel.helm.back === 0 && feel.helm.turned > 100 && feel.coll.collided && feel.coll.hull === 2 && feel.coll.booms === 1 && feel.coll.stillThere &&
    feel.offscreen.every(Boolean) && feel.wp.join() === 'false,true,false' && feel.stoppedTurn < 2,
   `game feel: helm held astern turned ${feel.helm.turned}° without swinging back; collision ${JSON.stringify(feel.coll)}; ships start off-screen ${feel.offscreen.join('/')}; waypoint passed abeam ${feel.wp.join('/')}; stopped ship turned ${feel.stoppedTurn.toFixed(1)}°`);
+
+// 16. Referee fairness: no-risk encounters close quietly, a cancelled order isn't an action, one collision per contact.
+const fair = await page.evaluate(() => {
+  const snd = window.sound; window.sound = () => {}; const keep = MISSIONS[0].enc, out = {};
+  const run = (setup, drive, until) => { MISSIONS[0].enc = []; wkStart(MISSIONS[0]); const a = setup(); const e = P.encs[0];
+    for (let i = 0; i < 8000 && !until(e, a); i++) { drive(e, a, i); wkTick(0.05); } return { e, a }; };
+  // a ship that turns away straight after appearing is never a risk: nothing to judge
+  let r = run(() => { spawnAI('xstbd'); const a = P.ais[0]; a.h = a.th = a.h0 = norm(a.h + 180); return a; }, () => {}, e => e.done);
+  out.quiet = { silent: !!r.e.silent, pts: r.e.pts, score: P.score };
+  // ordering 40° for one tick and cancelling it is not "substantial action"
+  r = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e, a, i) => { if (e.announced && !e.flick) { e.flick = 1; P.own.th = norm(e.h0 + 40); } else if (e.flick === 1) { e.flick = 2; P.own.th = e.h0; } }, e => e.done);
+  out.flick = r.e.notes.some(n => /No substantial action/.test(n.txt));
+  // the same order held is an action
+  r = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e) => { if (e.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + 50); } }, e => e.done);
+  out.held = !!r.e.act && !r.e.notes.some(n => /No substantial action/.test(n.txt));
+  // once her encounter is over, sitting on top of her costs one heart, not one every few seconds
+  const a = r.a; a.x = P.own.x; a.y = P.own.y; a.h = a.th = P.own.h; a.v = a.tv = P.own.v; a.state = 'resume'; const h0 = P.hull;
+  for (let i = 0; i < 300; i++) { a.x = P.own.x + 0.02; a.y = P.own.y; wkTick(0.05); }
+  out.contact = { heartsLost: h0 - P.hull, logged: P.lateHits.length };
+  MISSIONS[0].enc = keep; window.sound = snd; return out;
+});
+ok(fair.quiet.silent && fair.quiet.pts === 0 && fair.quiet.score === 0 && fair.flick && fair.held && fair.contact.heartsLost === 1 && fair.contact.logged === 1,
+  `referee fairness: no-risk ship closed quietly (${fair.quiet.score} pts); a cancelled 40° order ${fair.flick ? 'is not' : 'IS'} an action; a held one ${fair.held ? 'is' : 'is NOT'}; 15 s overlapping a passed ship cost ${fair.contact.heartsLost} heart`);
+
+// 17. Older iPhones (iOS 15): without findLast or canvas roundRect, and with an error in one frame, the app keeps running.
+const oldPage = await browser.newPage({ viewport: { width: 375, height: 667 } });
+const oldErrors = []; oldPage.on('pageerror', e => oldErrors.push(String(e)));
+await oldPage.addInitScript(() => { delete Array.prototype.findLast; delete CanvasRenderingContext2D.prototype.roundRect; });
+await oldPage.goto(url); await oldPage.waitForTimeout(200);
+const old = await oldPage.evaluate(async () => {
+  window.sound = () => {}; MISSIONS[0].enc = ['xport:fishing', 'headon:nuc']; wkStart(MISSIONS[0]);
+  for (let i = 0; i < 3000 && P.ais.length < 1; i++) wkTick(0.05); for (let i = 0; i < 100; i++) wkTick(0.05);
+  wkDraw(); P.encs.findLast(() => true);
+  const t0 = P.time, draw = wkDraw; let thrown = 0; window.wkDraw = () => { if (!thrown++) throw new Error('test: one bad frame'); draw(); };
+  await new Promise(r => setTimeout(r, 600));
+  return { advanced: P.time > t0, thrown };
+});
+await oldPage.close();
+ok(old.advanced && old.thrown > 1, `older iPhones: special vessels drawn without roundRect/findLast; the loop kept running after an error in one frame (${old.thrown} frames drawn)`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();

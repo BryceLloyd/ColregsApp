@@ -37,6 +37,7 @@ function fogGrade(e,add){
     if(e.act.tg>=5)add(60,true,`Took avoiding action in ample time, ${Math.round(e.act.tg)} min before CPA, by ${e.act.by} (Rule 19(d))`);
     else add(30,true,`Took avoiding action ${Math.max(0,e.act.tg).toFixed(1)} min before CPA (Rule 19(d))`,'Act as soon as radar shows a close-quarters situation developing.');
   }else if((e.minV??99)<=FOG_STEER&&e.minR>=0.4)add(30,true,'Kept to steerage way and let her pass clear (Rule 19(e))');
+  else if(e.minR>=0.5)add(20,true,`No action needed: she passed ${e.minR.toFixed(2)} nm clear (Rule 19(d))`);
   else add(-80,false,'No avoiding action (Rule 19(d))','In fog every ship must act when close quarters is developing: alter course or slow right down, in ample time.');
   if(e.dir){const fwd=Math.abs(e.dirRb)<90;
     if(fwd&&e.dir<0&&e.geo!=='overtaking')add(-50,false,'Altered to port for a ship forward of your beam (Rule 19(d)(i))','In fog, for a ship forward of the beam, alter to starboard (unless you are overtaking her) or slow down.');
@@ -52,7 +53,7 @@ function fogGrade(e,add){
 // Mission end: how long your fog signal was going.
 function fogEndGrade(){
   const F=P.fog;if(!F)return'';
-  const pct=P.time>0?Math.round(100*F.onT/P.time):0,p=pct>=90?60:pct>=50?0:-60;P.score+=p;
+  const pct=P.time>0?Math.round(100*F.onT/P.time):0,p=pct>=90?100:pct>=50?0:-100;P.score+=p;
   return `<div class="enc"><h4><span>${p>=0?'✅':'❌'} Fog conduct</span><span style="color:${p>=0?'var(--ok)':'var(--bad)'}">${p>=0?'+':''}${p}</span></h4><ul>`+
     `<li style="color:${p>0?'#bfeccd':'#ffb3b3'}">${p>0?'✓':'✗'} Fog signal sounding ${pct}% of the time (Rule 35(a)) (${p>0?'+':''}${p})</li></ul></div>`;
 }

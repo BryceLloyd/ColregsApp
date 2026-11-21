@@ -4,7 +4,7 @@
 function wkShapes(c,type,x,y){
   const S={nuc:['ball','ball'],ram:['ball','diamond','ball'],cbd:['cyl'],fishing:['coneD','coneU']}[type];if(!S)return;
   const g=9,top=y-(S.length-1)*g/2,hh=(S.length-1)*g+16;
-  c.fillStyle='#dcebf5';c.beginPath();c.roundRect(x-7,top-8,14,hh,4);c.fill();c.strokeStyle='#0b2340';c.lineWidth=1;c.stroke();
+  c.fillStyle='#dcebf5';c.beginPath();rrect(c,x-7,top-8,14,hh,4);c.fill();c.strokeStyle='#0b2340';c.lineWidth=1;c.stroke();
   c.strokeStyle='#555';c.lineWidth=1;c.beginPath();c.moveTo(x,top-6);c.lineTo(x,top+hh-10);c.stroke();
   S.forEach((k,i)=>{const cy=top+i*g;c.beginPath();
     if(k==='ball')c.arc(x,cy,3.4,0,7);

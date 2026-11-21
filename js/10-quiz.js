@@ -14,11 +14,11 @@ function makeQs0(kind,n,topic){
   else if(kind==='lights'){
     const pool=shuffle(LIGHTS.map(x=>({t:'L',x})).concat(SHAPES.map(x=>({t:'S',x})))),facts=shuffle(LIGHTQ),rev=shuffle(LIGHTS);
     for(let k=0;k<n;k++){const r=k%4;
-      if(r===2){const x=rev.pop(),others=shuffle(LIGHTS.filter(o=>o!==x)).slice(0,3);
+      if(r===2){const x=rev.pop(),others=shuffle(LIGHTS.filter(o=>o!==x&&!lookAlike(o,x))).slice(0,3);
         qs.push({vis:'',prompt:`Which of these is: ${x.s}?`,img:true,opts:shuffle([x,...others]).map(o=>({h:lightSVG(o),ok:o===x})),explain:x.note});continue;}
       if(r===3&&facts.length){qs.push(tq(facts.pop()));continue;}
       const {t,x}=pool.pop();const src=t==='L'?LIGHTS:SHAPES;
-      const wrong=shuffle(src.filter(o=>o.s!==x.s)).slice(0,3).map(o=>o.s);
+      const wrong=shuffle(src.filter(o=>o.s!==x.s&&!lookAlike(o,x))).slice(0,3).map(o=>o.s);
       qs.push({vis:`<div class="w">${t==='L'?lightSVG(x):shapeSVG(x)}</div>`,prompt:t==='L'?"At night you see these lights. What is she?":"By day you see this shape. What does it mean?",
         opts:shuffle([x.s,...wrong]).map(s=>({h:esc(s),ok:s===x.s})),explain:x.note});}
   }else if(kind==='flags'){
