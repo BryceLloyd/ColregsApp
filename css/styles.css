@@ -226,7 +226,6 @@ code{font-size:12px;background:#0b1626;padding:1px 4px;border-radius:4px}
 .installHint .i{font-size:22px}.installHint .shr{display:inline-block;transform:rotate(-90deg)}.installHint .ib{flex:none}
 .rmap b{display:inline;font-size:inherit;margin:0}
 @media (max-width:359px){.hhead b{font-size:15px;white-space:nowrap}.helpBtn{padding:0 10px}}
-#pHint .you{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.1);color:var(--ink);font-weight:700;white-space:nowrap}
 #pHint .al{flex:1;min-width:0}
 /* review and mock exam */
 #rvTile.due{border-color:#d4a23a;background:#2a2410}
