@@ -392,7 +392,8 @@ const st = await page.evaluate(() => {
   show('app'); queue = [0]; qi = 0; mode = 'practice'; replayChoice = null; load(); while (t < freezeTime()) step(0.02); phase = 'decide'; decide(SCEN[0].correct[0]); out.scenRule = rulesIn(SCEN[0].rule).join(',');
   out.scenLogged = rulesIn(SCEN[0].rule).every(k => study.r[k]?.ok >= 1);
   out.r = { 14: study.r[14], 8: study.r[8], 16: study.r[16], 15: study.r[15] };
-  show('home'); out.chips = document.querySelectorAll('#ruleMap .rmRow .rc').length; out.chip16 = document.querySelector('#ruleMap [data-r="16"]').className; out.chip15 = document.querySelector('#ruleMap [data-r="15"]').className;
+  show('home'); out.collapsed = { chips: document.querySelectorAll('#ruleMap .rmRow .rc').length, strip: document.querySelectorAll('#ruleMap .rmStrip i').length };
+  document.querySelector('#ruleMap .rmHead').click(); out.chips = document.querySelectorAll('#ruleMap .rmRow .rc').length; out.chip16 = document.querySelector('#ruleMap [data-r="16"]').className; out.chip15 = document.querySelector('#ruleMap [data-r="15"]').className;
   out.sum = $('ruleMap').querySelector('.rmSum').textContent;
   document.querySelector('#ruleMap [data-r="14"]').click(); out.sheet = { open: $('ovRule').classList.contains('on'), title: $('rlTitle').textContent, play: $('rlPlay')?.textContent }; closeOv('ovRule');
   const code = backupCode(); localStorage.removeItem('colregsStudy'); study = { v: 1, r: {} }; out.restored = restoreCode(code) && study.r[16]?.ok === 1; out.badCode = restoreCode('nonsense');
@@ -402,9 +403,9 @@ const st = await page.evaluate(() => {
 });
 ok(welcome.at && welcome.closed && !welcome.again && st.cites.join('|') === '9,34|13,14,15,16,17|19|' && st.light === '26' && st.buoy === 'IALA' &&
    st.r[14]?.ok === 2 && st.r[8]?.n === 2 && st.r[8]?.ok === 1 && st.r[16]?.ok === 1 && st.r[15]?.ok === 0 && st.scenLogged &&
-   st.chips === 33 && /l2/.test(st.chip16) && /l1/.test(st.chip15) && st.sheet.open && st.sheet.title === 'Rule 14 · Head-on' && /Open water/.test(st.sheet.play || '') &&
+   st.chips === 33 && st.collapsed.chips === 0 && st.collapsed.strip === 33 && /l2/.test(st.chip16) && /l1/.test(st.chip15) && st.sheet.open && st.sheet.title === 'Rule 14 · Head-on' && /Open water/.test(st.sheet.play || '') &&
    st.restored && !st.badCode && st.install === 'none' && st.title === '⚓ Level 1',
-  `study record: welcome on first launch only; quiz, scenario (${st.scenRule}) and Watchkeeper answers logged by rule; rule map ${st.chips} rules ("${st.sum}"); sheet "${st.sheet.title}"; backup restores; title "${st.title}" ${JSON.stringify(st.r)}`);
+  `study record: welcome on first launch only; quiz, scenario (${st.scenRule}) and Watchkeeper answers logged by rule; rule map ${st.chips} rules, collapsed ${JSON.stringify(st.collapsed)} ("${st.sum}"); sheet "${st.sheet.title}"; backup restores; title "${st.title}" ${JSON.stringify(st.r)}`);
 
 // 20. Mistakes deck and mock exam.
 const rv = await page.evaluate(() => {

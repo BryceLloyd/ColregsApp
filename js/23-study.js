@@ -88,12 +88,17 @@ function ruleLevel(k){const x=study.r[k];if(!x||!x.h)return 0;const p=[...x.h].f
 function weakRules(){return Object.keys(RULE_INFO).filter(k=>study.r[k]?.h.length>=2&&ruleLevel(k)===1)
   .sort((a,b)=>{const p=k=>[...study.r[k].h].filter(c=>c==='1').length/study.r[k].h.length;return p(a)-p(b);}).slice(0,3);}
 
+// Collapsed by default: a summary line, the weak rules and a strip of small squares; tap to open the full map.
+let mapOpen=(()=>{try{return localStorage.getItem('colregsMapOpen')==='1';}catch(e){return false;}})();
 function renderRuleMap(){
   const all=Object.keys(RULE_INFO),tried=all.filter(k=>ruleLevel(k)>0).length,strong=all.filter(k=>ruleLevel(k)===3).length,weak=weakRules();
-  $('ruleMap').innerHTML=`<div class="rmSum">${tried?`<b>${tried}</b> of ${all.length} practised · <b>${strong}</b> strong`:'Play or answer questions and each rule fills in here.'}</div>`+
+  $('ruleMap').classList.toggle('open',mapOpen);
+  $('ruleMap').innerHTML=`<button class="rmHead" aria-expanded="${mapOpen}"><span class="rmSum">${tried?`<b>${tried}</b> of ${all.length} practised · <b>${strong}</b> strong`:'Play or answer questions and each rule fills in here.'}</span><span class="rmTog">${mapOpen?'Hide ▴':'Show ▾'}</span></button>`+
+    (mapOpen?'':`<div class="rmStrip" aria-hidden="true">${RULE_GROUPS.flatMap(([,ks])=>ks).map(k=>`<i class="l${ruleLevel(String(k))}"></i>`).join('')}</div>`)+
     (weak.length?`<div class="rmWeak">Work on: ${weak.map(k=>`<button class="rmLink" data-r="${k}">${ruleName(k)}</button>`).join(' ')}</div>`:'')+
-    RULE_GROUPS.map(([g,ks])=>`<div class="rmG">${g}</div><div class="rmRow">${ks.map(k=>`<button class="rc l${ruleLevel(String(k))}${isNaN(k)?' w':''}" data-r="${k}" aria-label="${ruleName(String(k))}">${k==='IALA'?'Buoyage':k==='Flags'?'Flags':k}</button>`).join('')}</div>`).join('')+
-    `<div class="rmKey"><span class="rc l0"></span>not tried <span class="rc l1"></span>needs work <span class="rc l2"></span>getting there <span class="rc l3"></span>strong</div>`;
+    (!mapOpen?'':RULE_GROUPS.map(([g,ks])=>`<div class="rmG">${g}</div><div class="rmRow">${ks.map(k=>`<button class="rc l${ruleLevel(String(k))}${isNaN(k)?' w':''}" data-r="${k}" aria-label="${ruleName(String(k))}">${k==='IALA'?'Buoyage':k==='Flags'?'Flags':k}</button>`).join('')}</div>`).join('')+
+    `<div class="rmKey"><span class="rc l0"></span>not tried <span class="rc l1"></span>needs work <span class="rc l2"></span>getting there <span class="rc l3"></span>strong</div>`);
+  $('ruleMap').querySelector('.rmHead').onclick=()=>{mapOpen=!mapOpen;try{localStorage.setItem('colregsMapOpen',mapOpen?'1':'0');}catch(e){}renderRuleMap();};
   $('ruleMap').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>openRule(b.dataset.r));
 }
 function openRule(k){
