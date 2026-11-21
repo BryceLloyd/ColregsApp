@@ -1,7 +1,7 @@
 // View switching, overlays, learning sections and practice lists.
 // ================= VIEWS =================
 let view='home';
-function show(v){view=v;['home','sec','app','play'].forEach(id=>$(id).style.display=id===v?'flex':'none');if(v==='app')resize();if(v==='play')wkResize();}
+function show(v){view=v;if(v==='home'&&typeof renderHome==='function')renderHome();['home','sec','app','play'].forEach(id=>$(id).style.display=id===v?'flex':'none');if(v==='app')resize();if(v==='play')wkResize();}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.ov').classList.remove('on'));
 function openOv(id){$(id).classList.add('on');if(id==='ovLb'||id==='ovEnd')renderBoard();}
 function closeOv(id){$(id).classList.remove('on')}

@@ -19,15 +19,25 @@
 
 <!-- HOME -->
 <div class="view" id="home">
-  <div class="hero"><div class="a">⚓</div><h2>COLREGs Trainer</h2><p>Learn the Rules of the Road, then prove it.</p></div>
-  <button class="tile main" id="goChallenge"><span class="e">🏆</span><span><b>Challenge</b><br><small style="color:#cfe2ff">Random scenarios · 7 levels, each harder · 3 lives · leaderboard</small></span></button>
-  <button class="tile main wk" id="goPlay"><span class="e">🧭</span><span><b>Watchkeeper · free play</b><br><small style="color:#c8f0e2">Steer your own ship through traffic. Every move judged on the Rules.</small></span></button>
-  <div class="grid2">
-    <button class="tile" data-sec="rules"><span class="e">🚢</span><b>Rules &amp; scenarios</b><small>Steering &amp; sailing rules + scenarios</small></button>
-    <button class="tile" data-sec="lights"><span class="e">💡📯</span><b>Lights &amp; sounds</b><small>Lights, shapes, sound signals + night &amp; fog scenarios</small></button>
-    <button class="tile" data-sec="buoys"><span class="e">🛟</span><b>Buoyage</b><small>IALA marks + buoyage scenarios</small></button>
-    <button class="tile" data-sec="flags"><span class="e">🚩</span><b>Signal flags</b><small>A–Z code flags + quiz</small></button>
-    <button class="tile" id="homeLb" style="grid-column:span 2"><span class="e">🏆</span><b>Leaderboard</b><small>Who's top of the fleet?</small></button>
+  <div class="hhead"><span class="a">⚓</span><b>COLREGs Trainer</b><button class="ib" id="goPlay" aria-label="How to play and settings">⚙️</button></div>
+  <div class="scroll stack" id="homeScroll">
+    <div class="wkHero">
+      <div class="t">🧭 Watchkeeper</div>
+      <div class="s">Take the watch in endless traffic. Every encounter is judged against the Rules. Lose a heart for each collision or bad call.</div>
+      <div class="best" id="wkBest"></div>
+      <button class="playBig" id="wkPlay">⚓ Play</button>
+    </div>
+    <h3 class="sh">Practice</h3>
+    <div class="grid2" id="wkPractice"></div>
+    <h3 class="sh">More</h3>
+    <button class="tile" id="goChallenge"><span class="e">🏆</span><b>Challenge</b><small>Random scenarios and questions · 7 levels · 3 lives · leaderboard</small></button>
+    <div class="grid2">
+      <button class="tile" data-sec="rules"><span class="e">🚢</span><b>Rules &amp; scenarios</b><small>Steering &amp; sailing rules + scenarios</small></button>
+      <button class="tile" data-sec="lights"><span class="e">💡📯</span><b>Lights &amp; sounds</b><small>Lights, shapes, sound signals + night &amp; fog scenarios</small></button>
+      <button class="tile" data-sec="buoys"><span class="e">🛟</span><b>Buoyage</b><small>IALA marks + buoyage scenarios</small></button>
+      <button class="tile" data-sec="flags"><span class="e">🚩</span><b>Signal flags</b><small>A–Z code flags + quiz</small></button>
+      <button class="tile" id="homeLb" style="grid-column:span 2"><span class="e">🏆</span><b>Challenge leaderboard</b><small>Who's top of the fleet?</small></button>
+    </div>
   </div>
 </div>
 
@@ -42,7 +52,7 @@
   </header>
   <div class="meta" style="justify-content:space-between;flex:none"><span id="pWp"></span><span id="pTime"></span></div>
   <canvas id="pBridge" style="display:none"></canvas>
-  <div id="pStage"><canvas id="pcv"></canvas><div id="pToast"></div><button id="pRange">3 nm</button><div id="pCard"></div><div id="pResult"></div></div>
+  <div id="pStage"><canvas id="pcv"></canvas><div id="pToast"></div><button id="pRange">3 nm</button><button id="pMute" aria-label="Sound on">🔊</button><div id="pCard"></div><div id="pResult"></div></div>
   <div id="pHint" class="calm">Steer for the waypoint. Tap a ship to check her bearing and CPA.</div>
   <div class="pctl">
     <div class="pbox"><div class="lb2">Helm (autopilot)</div>
@@ -62,6 +72,7 @@
     <div class="note">Steer your own ship through real traffic to each waypoint. A referee judges every encounter against the Rules: <b>early, bold action</b> when you give way, <b>holding course and speed</b> when you stand on, the right <b>sound signals</b>, and a safe passing distance. Time runs 20× faster than real life.</div>
     <div class="note">⚙️ <b>Helm:</b> tap ↰10° / 10°↱ (hold to keep turning). <b>Engine:</b> astern to full ahead. <b>Horn:</b> • starboard, • • port, • • • astern, 5×• doubt. Tap any ship for her bearing trend and closest point of approach (CPA).</div>
     <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pHints" checked style="width:22px;height:22px"><span><b>Allow hints</b><br><span class="small">During an encounter you can tap 💡 to see your role and what to do, for −20 points. Off = no hints at all.</span></span></label>
+    <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pPauseErr" checked style="width:22px;height:22px"><span><b>Pause to explain mistakes</b><br><span class="small">In practice missions, stop the clock when you get something wrong, so you can read why before carrying on. Points and a one-line verdict always appear as you play.</span></span></label>
     <p class="small" style="margin:0">Buoyage region: <b>IALA Region A</b> (standard).</p>
     <div id="pMissions"></div>
   </div>
@@ -74,7 +85,7 @@
     <div class="big center" id="dbScore"></div>
     <div class="center small" id="dbSub"></div>
     <div id="dbList"></div>
-    <div class="row"><button class="btn" id="dbRetry">Sail again</button><button class="btn sec" id="dbMis">Missions</button></div>
+    <div class="row"><button class="btn" id="dbRetry">Sail again</button><button class="btn sec" id="dbMis">Practice</button></div>
     <button class="btn sec" id="dbHome">🏠 Home</button>
   </div>
 </div></div>
@@ -259,6 +270,8 @@
 <script src="js/18-watchkeeper-channel.js"></script>
 <script src="js/19-watchkeeper-night.js"></script>
 <script src="js/20-watchkeeper-fog.js"></script>
+<script src="js/21-watchkeeper-feedback.js"></script>
+<script src="js/22-watchkeeper-home.js"></script>
 <script src="js/99-boot.js"></script>
 </body>
 </html>

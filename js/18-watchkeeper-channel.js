@@ -89,7 +89,7 @@ function chanTick(dt){
   const ch=P.m.chan,C=P.chan,o=P.own,q=chanPos(ch,o);
   // aground: outside the dredged channel
   if(Math.abs(q.off)>ch.hw&&P.time-C.groundT>2){
-    C.aground++;C.groundT=P.time;P.hull--;
+    C.aground++;C.groundT=P.time;P.hull--;popText('🪨 Aground',false);
     wkToast(`🪨 Aground! You left the channel (Rule 9(a)). Lost a heart and 100 points.`,'bad');
     const back=chanAt(ch,q.s,ch.hw*0.4);o.x=back.x;o.y=back.y;o.h=o.th=norm(back.h);P.refTh=o.th;o.v=0;o.tele=2;o.tv=TELE[2].v;wkUI();
     return;
@@ -104,7 +104,7 @@ function chanTick(dt){
     if(b.done)continue;
     if(b.inT===null&&q.s>b.s-1.0&&q.s<b.s)b.inT=P.time;
     if(q.s>=b.s){b.done=true;b.ok=b.inT!==null&&P.horn.some(h=>h.p==='L'&&h.t>=b.inT-1&&h.t<=P.time);
-      const p=b.ok?15:-10;C.pts+=p;P.score+=p;
+      const p=b.ok?15:-10;C.pts+=p;P.score+=p;popText(`${b.ok?'+15':'−10'} Rule 9(f)`,b.ok);
       wkToast(b.ok?`✓ Prolonged blast approaching the bend (Rules 9(f) & 34(e)) +15`:`✗ No prolonged blast approaching a blind bend (Rules 9(f) & 34(e)) −10`,b.ok?'ok':'bad');}
   }
 }
