@@ -54,7 +54,7 @@ function mountQ(m,q,{wrongLabel,onAnswer,nextText,onNext}){
   m.innerHTML=(q.vis?`<div class="qvis">${q.vis}</div>`:'')+`<div class="qp">${esc(q.prompt)}</div>${body}<div class="qfb"></div><button class="btn qnext" style="display:none"></button>`;
   const pb=m.querySelector('.play');if(pb)pb.onclick=()=>sound(pb.dataset.p);
   if(q.sound)sound(q.sound);
-  const done=ok=>{q.answered=true;onAnswer(ok);
+  const done=ok=>{q.answered=true;studyQ(q,ok);onAnswer(ok);
     const fb=m.querySelector('.qfb');fb.className='qfb '+(ok?'ok':'bad');fb.style.display='block';
     fb.innerHTML=`<h4>${ok?'✅ Correct':wrongLabel}</h4>${esc(q.explain)}`+(q.order&&!ok?`<ol style="margin:4px 0 0;padding-left:18px">${q.items.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:'');
     const nb=m.querySelector('.qnext');nb.style.display='block';nb.textContent=nextText();nb.onclick=onNext;

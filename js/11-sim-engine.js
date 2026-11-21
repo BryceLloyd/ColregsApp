@@ -121,7 +121,7 @@ function nextLabel(){
 function decide(k){
   if(phase!=='decide')return;
   choice=k;applyAction(k);
-  const ok=sc.correct.includes(k);
+  const ok=sc.correct.includes(k);studyLog(rulesIn(sc.rule),ok);
   answered++;if(ok)score++;else{missed.push(sc.cat);if(mode==='challenge')lives--;}
   hud();
   const fb=$('fb');fb.className=ok?'ok':'bad';fb.style.display='flex';$('choices').style.display='none';

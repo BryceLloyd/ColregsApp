@@ -49,7 +49,7 @@ function wkStart(m){
   P.chan=chanInit(m);$('pHornChan').style.display='none';$('pBridge').style.display=m.night?'block':'none';
   P.fog=fogInit(m);$('pFogBtn').style.display=m.fog?'':'none';fogUI();
   if(m.fog){P.own.v=P.own.tv=TELE[3].v;P.own.tele=3;P.lastSpawn=4;} // fog: start at half speed, with a moment before the first ship
-  $('pTitle').textContent=m.endless?'⚓ Endless · level 1':`${MISSIONS.findIndex(x=>x.id===m.id)+1} · ${m.name}`;P.level=0;P.streak=0;$('pPause').textContent='⏸';
+  $('pTitle').textContent=m.endless?'⚓ Watchkeeper · level 1':`${MISSIONS.findIndex(x=>x.id===m.id)+1} · ${m.name}`;P.level=0;P.streak=0;$('pPause').textContent='⏸';
   $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}" aria-label="${x.l}">${innerWidth<400&&x.l==='Astern'?'Astn':x.l}</button>`).join(''); // narrow phones: a shorter label so it isn't clipped
   $('pTele').querySelectorAll('button').forEach(b=>b.onclick=()=>{P.own.tele=+b.dataset.i;P.own.tv=TELE[P.own.tele].v;wkUI();});
   show('play');wkResize();wkUI();wkToast('Steer for waypoint 1 ⚑','info');if(m.fog)wkToast('🌫 Fog: you can see less than half a mile. Radar only.','info');

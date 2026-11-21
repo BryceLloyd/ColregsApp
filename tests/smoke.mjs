@@ -16,6 +16,8 @@ page.on('pageerror', e => errors.push(String(e)));
 await page.addInitScript(() => { let s = 20261121; Math.random = () => (s = (s * 16807) % 2147483647) / 2147483647; });
 await page.goto(url);
 await page.waitForTimeout(300);
+// First launch (fresh storage): the welcome is showing; "Look around first" closes it for good.
+const welcome = await page.evaluate(() => { const at = $('ovWelcome').classList.contains('on'); $('wcLook').click(); const closed = !$('ovWelcome').classList.contains('on'); firstLaunch(); return { at, closed, again: $('ovWelcome').classList.contains('on') }; });
 
 // 1. Every scenario: each correct answer passes clear (no collision / grounding).
 const scen = await page.evaluate(() => {
@@ -275,7 +277,7 @@ const home = await page.evaluate(() => {
   localStorage.removeItem('wkBest_m1'); localStorage.removeItem('wkBest_m3'); localStorage.removeItem('wkBest_m7'); localStorage.removeItem('wkBestLevel'); window.sound = snd;
   return { tiles, stars, bestBefore, started, lostHeart, res, bestAfter };
 });
-ok(home.tiles.length === 6 && home.stars.join() === '3,0,1' && /No watch kept yet/.test(home.bestBefore) && home.started.endless && home.started.view === 'play' && /Endless/.test(home.started.title) &&
+ok(home.tiles.length === 6 && home.stars.join() === '3,0,1' && /No watch kept yet/.test(home.bestBefore) && home.started.endless && home.started.view === 'play' && /Watchkeeper · level 1/.test(home.started.title) &&
    home.lostHeart && home.res.over === true && /out of hearts/.test(home.res.head) && (home.res.score > 0 ? home.res.best === home.res.score && /best watch/.test(home.bestAfter) : true),
   `home & endless: ${home.tiles.length} practice tiles, stars ${home.stars.join('/')}; Play starts "${home.started.title}"; unattended watch ended at level ${home.res.level} (${home.res.score} pts): "${home.res.head}"`);
 
@@ -369,6 +371,35 @@ await se.close();
 ok(!lay.offscreen.length && !lay.small.length && lay.chart >= 160 && !lay.fogBtnInM1 && lay.fogBtnInFog && !lay.passAtStart &&
    lay.endWatch.over && lay.endWatch.best === 321 && /Watch ended/.test(lay.endWatch.head) && /Next: Busy crossing/.test(lay.next),
   `small phone: all controls on screen and ≥40 px ${JSON.stringify({ offscreen: lay.offscreen, small: lay.small })}, chart ${lay.chart} px; fog button only in fog; Pass row hidden until overtaking; ending a watch keeps ${lay.endWatch.best}; debrief offers "${lay.next}"`);
+
+// 19. Study record and rule map: answers are logged by rule, the map colours them in, a backup code round-trips.
+const st = await page.evaluate(() => {
+  const out = {}; localStorage.removeItem('colregsStudy'); study = { v: 1, r: {} };
+  out.cites = [rulesIn('Signalled late (Rules 9(f) & 34(e))'), rulesIn('Rules 13–17'), rulesIn('Turned to port (Rule 19(d)(i))'), rulesIn('no rule here')].map(r => r.join(','));
+  out.light = qKeys({ kind: 'lights', prompt: 'At night you see these lights. What is she?', explain: 'Green over white: she is trawling.', opts: [] }).join(',');
+  out.buoy = qKeys({ kind: 'buoys', prompt: 'Which side?', explain: 'Leave it to port.', opts: [] }).join(',');
+  // a quiz question through the shared renderer (Rule 14), answered right
+  const q = tq(RULEQ[0]), box = document.createElement('div'); document.body.appendChild(box);
+  mountQ(box, q, { wrongLabel: 'x', onAnswer() {}, nextText: () => 'n', onNext() {} }); box.querySelector(`[data-j="${q.opts.findIndex(o => o.ok)}"]`).click(); box.remove();
+  // a Watchkeeper encounter: good action, then a close call
+  studyEnc({ notes: [{ ok: true, txt: 'Bold, early action (Rules 8 & 16)', p: 100 }, { ok: false, txt: 'Close quarters: passed only 0.15 nm off', p: -50 }], cl: { rule: 'Rule 15' } });
+  // a Challenge scenario, answered right
+  show('app'); queue = [0]; qi = 0; mode = 'practice'; replayChoice = null; load(); while (t < freezeTime()) step(0.02); phase = 'decide'; decide(SCEN[0].correct[0]); out.scenRule = rulesIn(SCEN[0].rule).join(',');
+  out.scenLogged = rulesIn(SCEN[0].rule).every(k => study.r[k]?.ok >= 1);
+  out.r = { 14: study.r[14], 8: study.r[8], 16: study.r[16], 15: study.r[15] };
+  show('home'); out.chips = document.querySelectorAll('#ruleMap .rmRow .rc').length; out.chip16 = document.querySelector('#ruleMap [data-r="16"]').className; out.chip15 = document.querySelector('#ruleMap [data-r="15"]').className;
+  out.sum = $('ruleMap').querySelector('.rmSum').textContent;
+  document.querySelector('#ruleMap [data-r="14"]').click(); out.sheet = { open: $('ovRule').classList.contains('on'), title: $('rlTitle').textContent, play: $('rlPlay')?.textContent }; closeOv('ovRule');
+  const code = backupCode(); localStorage.removeItem('colregsStudy'); study = { v: 1, r: {} }; out.restored = restoreCode(code) && study.r[16]?.ok === 1; out.badCode = restoreCode('nonsense');
+  out.install = $('installHint').style.display;
+  wkStart(MISSIONS.find(m => m.endless)); out.title = $('pTitle').textContent; P = null; show('home');
+  return out;
+});
+ok(welcome.at && welcome.closed && !welcome.again && st.cites.join('|') === '9,34|13,14,15,16,17|19|' && st.light === '26' && st.buoy === 'IALA' &&
+   st.r[14]?.ok === 2 && st.r[8]?.n === 2 && st.r[8]?.ok === 1 && st.r[16]?.ok === 1 && st.r[15]?.ok === 0 && st.scenLogged &&
+   st.chips === 33 && /l2/.test(st.chip16) && /l1/.test(st.chip15) && st.sheet.open && st.sheet.title === 'Rule 14 · Head-on' && /Open water/.test(st.sheet.play || '') &&
+   st.restored && !st.badCode && st.install === 'none' && st.title === '⚓ Watchkeeper · level 1',
+  `study record: welcome on first launch only; quiz, scenario (${st.scenRule}) and Watchkeeper answers logged by rule; rule map ${st.chips} rules ("${st.sum}"); sheet "${st.sheet.title}"; backup restores; title "${st.title}" ${JSON.stringify(st.r)}`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();

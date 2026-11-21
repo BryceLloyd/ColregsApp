@@ -104,7 +104,7 @@ function chanTick(dt){
     if(b.done)continue;
     if(b.inT===null&&q.s>b.s-1.0&&q.s<b.s)b.inT=P.time;
     if(q.s>=b.s){b.done=true;b.ok=b.inT!==null&&P.horn.some(h=>h.p==='L'&&h.t>=b.inT-1&&h.t<=P.time);
-      const p=b.ok?15:-10;C.pts+=p;P.score+=p;popText(b.ok?'✓ Horn +15':'✗ Horn −10',b.ok);
+      const p=b.ok?15:-10;C.pts+=p;P.score+=p;popText(b.ok?'✓ Horn +15':'✗ Horn −10',b.ok);studyLog(['9','34'],b.ok);
       wkToast(b.ok?`✓ Prolonged blast approaching the bend (Rules 9(f) & 34(e)) +15`:`✗ No prolonged blast approaching a blind bend (Rules 9(f) & 34(e)) −10`,b.ok?'ok':'bad');}
   }
 }
@@ -159,7 +159,7 @@ function chanEncGrade(e,add){
 function chanEndGrade(){
   const C=P.chan;if(!C)return'';
   const pct=C.inT>0?Math.round(100*C.stbdT/C.inT):100,keep=pct>=90?100:pct>=70?40:-50;
-  const gr=-100*C.aground;P.score+=keep+gr;C.pts+=keep+gr;
+  const gr=-100*C.aground;P.score+=keep+gr;C.pts+=keep+gr;studyLog(['9'],pct>=90);
   const bends=C.bends.filter(b=>b.done),ok=bends.filter(b=>b.ok).length;
   const li=(good,txt,p)=>`<li style="color:${good?'#bfeccd':'#ffb3b3'}">${good?'✓':'✗'} ${txt}${p?` (${p>0?'+':''}${p})`:''}</li>`;
   return `<div class="enc"><h4><span>${C.pts>=0?'✅':'❌'} Channel conduct</span><span style="color:${C.pts>=0?'var(--ok)':'var(--bad)'}">${C.pts>=0?'+':''}${C.pts}</span></h4><ul>`+
