@@ -14,7 +14,7 @@ function fogUI(){const b=$('pFogBtn');if(!b||!P?.fog)return;b.classList.toggle('
 
 // Each tick: your automatic fog signal, and other ships' fog signals that you hear.
 function fogTick(dt){
-  const F=P.fog,o=P.own;
+  const F=P.fog,o=P.own;F.inT=(F.inT||0)+dt; // time spent in fog (endless only has fog some of the time)
   if(F.on){F.onT+=dt;if(P.time>=F.next){F.next=P.time+FOG_EVERY;const p=o.v>0.3?'L':'LL';P.horn.push({t:P.time,p,auto:true});sound(p,0.3);}}
   for(const a of P.ais){
     if(a.fogT==null)a.fogT=P.time+Math.random()*FOG_EVERY;
@@ -53,9 +53,9 @@ function fogGrade(e,add){
 // Mission end: how long your fog signal was going.
 function fogEndGrade(){
   const F=P.fog;if(!F)return'';
-  const pct=P.time>0?Math.round(100*F.onT/P.time):0,p=pct>=90?100:pct>=50?0:-100;P.score+=p;if(p)studyLog(['35'],p>0);
+  const T=F.inT||P.time,pct=T>0?Math.round(100*F.onT/T):0,p=pct>=90?100:pct>=50?0:-100;P.score+=p;if(p)studyLog(['35'],p>0);
   return `<div class="enc"><h4><span>${p>=0?'✅':'❌'} Fog conduct</span><span style="color:${p>=0?'var(--ok)':'var(--bad)'}">${p>=0?'+':''}${p}</span></h4><ul>`+
-    `<li style="color:${p>0?'#bfeccd':'#ffb3b3'}">${p>0?'✓':'✗'} Fog signal sounding ${pct}% of the time (Rule 35(a)) (${p>0?'+':''}${p})</li></ul></div>`;
+    `<li style="color:${p>0?'#bfeccd':'#ffb3b3'}">${p>0?'✓':'✗'} Fog signal sounding ${pct}% of the time in fog (Rule 35(a)) (${p>0?'+':''}${p})</li></ul></div>`;
 }
 
 // ---- drawing: fog haze over the radar picture, and where you heard fog signals from ----

@@ -48,13 +48,13 @@ function extraQs(kind,n,topic){
   return out;
 }
 // ---------- shared question mount (quiz + challenge) ----------
-function mountQ(m,q,{wrongLabel,onAnswer,nextText,onNext}){
+function mountQ(m,q,{wrongLabel,onAnswer,nextText,onNext,silent}){
   const body=q.order?`<div class="ord">${q.shuf.map((s,j)=>`<button class="opt ordi" data-j="${j}"><span class="num"></span><span>${esc(s)}</span></button>`).join('')}</div><button class="linkb" id="ordReset">↺ Reset order</button>`
     :`<div class="opts">${q.opts.map((o,j)=>`<button class="opt ${q.img?'img':''}" data-j="${j}">${o.h}</button>`).join('')}</div>`;
   m.innerHTML=(q.vis?`<div class="qvis">${q.vis}</div>`:'')+`<div class="qp">${esc(q.prompt)}</div>${body}<div class="qfb"></div><button class="btn qnext" style="display:none"></button>`;
   const pb=m.querySelector('.play');if(pb)pb.onclick=()=>sound(pb.dataset.p);
   if(q.sound)sound(q.sound);
-  const done=ok=>{q.answered=true;studyQ(q,ok);onAnswer(ok);
+  const done=ok=>{q.answered=true;studyQ(q,ok);onAnswer(ok);if(silent)return onNext(); // exam: no feedback until the end
     const fb=m.querySelector('.qfb');fb.className='qfb '+(ok?'ok':'bad');fb.style.display='block';
     fb.innerHTML=`<h4>${ok?'✅ Correct':wrongLabel}</h4>${esc(q.explain)}`+(q.order&&!ok?`<ol style="margin:4px 0 0;padding-left:18px">${q.items.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:'');
     const nb=m.querySelector('.qnext');nb.style.display='block';nb.textContent=nextText();nb.onclick=onNext;

@@ -51,7 +51,7 @@ function wkStart(m){
   P.chan=chanInit(m);$('pHornChan').style.display='none';$('pBridge').style.display=m.night?'block':'none';
   P.fog=fogInit(m);$('pFogBtn').style.display=m.fog?'':'none';fogUI();
   if(m.fog){P.own.v=P.own.tv=TELE[3].v;P.own.tele=3;P.lastSpawn=4;} // fog: start at half speed, with a moment before the first ship
-  $('pTitle').textContent=m.endless?'⚓ Watchkeeper · level 1':`${MISSIONS.findIndex(x=>x.id===m.id)+1} · ${m.name}`;P.level=0;P.streak=0;$('pPause').textContent='⏸';
+  $('pTitle').textContent=m.endless?'⚓ Level 1':`${MISSIONS.findIndex(x=>x.id===m.id)+1} · ${m.name}`;P.level=0;P.streak=0;$('pPause').textContent='⏸';
   $('pTele').innerHTML=TELE.map((x,i)=>`<button data-i="${i}" aria-label="${x.l}">${innerWidth<400&&x.l==='Astern'?'Astn':x.l}</button>`).join(''); // narrow phones: a shorter label so it isn't clipped
   $('pTele').querySelectorAll('button').forEach(b=>b.onclick=()=>{P.own.tele=+b.dataset.i;P.own.tv=TELE[P.own.tele].v;wkUI();});
   show('play');wkResize();wkUI();wkToast('Steer for waypoint 1 ⚑','info');if(m.fog)wkToast('🌫 Fog: you can see less than half a mile. Radar only.','info');
@@ -98,6 +98,11 @@ function aiTick(a,dt){
   if(a.state?.startsWith('chan'))return chanAiTick(a,dt);
   if(P.m.fog&&a.state==='cruise'){const c=cpaOf(a,P.own);if(c.cpa<0.5&&c.tcpa>0&&c.range<2.2){ // in fog every ship acts: starboard for a ship forward of her beam
     if(Math.abs(norm(brg(a,P.own)-a.h))<90){a.th=norm(a.h0+35);a.state='avoid';}else a.state='stand';}}
+  if((a.state==='resume'||a.state==='cruise')&&!a.rogue&&P.encs.findLast(x=>x.id===a.id)?.done){ // her encounter is over, but she's closing on you again
+    const c=cpaOf(a,P.own);if(c.tcpa>0&&c.cpa<0.25&&c.range<1.2){const cl=classify(a,P.own);
+      if(cl.role==='give'){const rb=norm(brg(a,P.own)-a.h),turns=cl.type==='overtaking'?(rb>0?[-30,-60,-90]:[30,60,90]):[30,45,60,90,120];
+        const d=turns.find(d=>{const k=cpaOf({x:a.x,y:a.y,h:norm(a.h+d),v:a.v},P.own);return k.tcpa<=0||k.cpa>=0.3;})??turns[turns.length-1]; // the smallest turn that clears you
+        a.th=norm(a.h+d);a.state='avoid';}}}
   aiAvoidAis(a);
   const c=cpaOf(a,P.own),cl=classify(a,P.own),risk=c.cpa<0.35&&c.tcpa>0&&c.range<3.5;
   if(a.state==='cruise'&&risk&&c.range<2.2&&!a.rogue){
@@ -280,7 +285,7 @@ function wkTick(dt){
   for(const a of P.ais)if(dist(o,a)<COLLIDE&&!a.inContact&&!P.encs.some(e=>e.id===a.id&&!e.done)){
     a.inContact=true;a.hitT=P.time;P.lateHits.push(a.name);P.hull--;P.score-=100;P.booms.push({x:(o.x+a.x)/2,y:(o.y+a.y)/2,t:P.time,name:a.name});popText('💥 Collision −100',false);wkToast('💥 Collision with '+a.name+'!','bad');}
   if(P.chan)chanTick(dt);
-  if(P.fog)fogTick(dt);
+  if(P.fog&&P.m.fog)fogTick(dt);
   for(const a of P.ais){aiTick(a,dt);encTick(a,cpaOf(o,a));}
   P.ais=P.ais.filter(a=>{if(a.dead)return false;const c=cpaOf(o,a);return !(c.range>6&&c.tcpa<0);});
   // spawn

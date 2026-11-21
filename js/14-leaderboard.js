@@ -2,7 +2,7 @@
 // otherwise scores are kept on this device only (localStorage).
 const CFG=window.APP_CONFIG||{};
 const LB_ON=!!(CFG.supabaseUrl&&CFG.supabaseAnonKey);
-const LB_VERSION=4; // bump when Challenge scoring changes so old scores drop off the board
+const LB_VERSION=5; // bump when Challenge scoring changes so old scores drop off the board
 let board=[],boardState='loading';
 const lbHeaders=()=>({apikey:CFG.supabaseAnonKey,Authorization:'Bearer '+CFG.supabaseAnonKey,'Content-Type':'application/json'});
 function localBoard(){try{return JSON.parse(localStorage.getItem('colregsLocalBoard')||'[]')}catch(e){return []}}

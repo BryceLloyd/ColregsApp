@@ -228,3 +228,11 @@ code{font-size:12px;background:#0b1626;padding:1px 4px;border-radius:4px}
 @media (max-width:359px){.hhead b{font-size:15px;white-space:nowrap}.helpBtn{padding:0 10px}}
 #pHint .you{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.1);color:var(--ink);font-weight:700;white-space:nowrap}
 #pHint .al{flex:1;min-width:0}
+/* review and mock exam */
+#rvTile.due{border-color:#d4a23a;background:#2a2410}
+.tile.nudge{animation:nudge .5s}
+@keyframes nudge{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.mkRes{font-weight:800;font-size:16px;margin-top:4px}.mkRes.ok{color:var(--ok)}.mkRes.bad{color:var(--bad)}
+.mkPart{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0}.mkPart b{display:inline;margin:0}.mkPart .g{color:var(--ok)}.mkPart .r{color:var(--bad)}
+.mkMiss{display:flex;flex-direction:column;gap:3px;margin-top:6px}.mkMiss .g{color:#bfeccd;font-weight:700}
+.mkVis{max-width:160px}.mkVis .w{width:100%!important}

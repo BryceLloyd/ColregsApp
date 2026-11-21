@@ -33,6 +33,10 @@
     <div class="grid2" id="wkPractice"></div>
     <h3 class="sh">Your rules</h3>
     <div class="card rmap" id="ruleMap"></div>
+    <div class="grid2">
+      <button class="tile" id="rvTile"><span class="e">🔁</span><b>Review mistakes</b><small></small></button>
+      <button class="tile" id="mkTile"><span class="e">📝</span><b>Mock exam</b><small></small></button>
+    </div>
     <h3 class="sh">More</h3>
     <button class="tile" id="goChallenge"><span class="e">🏆</span><b>Challenge</b><small>Random scenarios and questions · 7 levels · 3 lives · your best runs</small></button>
     <div class="grid2">
@@ -214,6 +218,10 @@
 
 <template id="rulesTpl">
     <p class="small">Plain-English summary of the key steering &amp; sailing rules (COLREGs 1972, as amended). A study aid — always check the official text.</p>
+    <h3>Rules 2–3 · Responsibility and definitions</h3>
+    <ul><li><b>Rule 2:</b> the rules never excuse poor seamanship. When following them exactly would cause immediate danger, you may depart from them to avoid it.</li>
+    <li><b>Underway</b> = not at anchor, made fast to the shore or aground, even if stopped. <b>In sight</b> = seen by eye, not just on radar. <b>Restricted visibility</b> = fog, mist, snow, heavy rain, sandstorms; darkness alone doesn't count (Rule 3).</li>
+    <li><b>NUC</b>: can't manoeuvre through an exceptional circumstance, such as a breakdown. <b>RAM</b>: her work restricts her (cable laying, dredging, diving). <b>Constrained by draught</b>: her depth limits where she can go. <b>Fishing</b>: gear that restricts manoeuvring; trolling lines don't count (Rule 3).</li></ul>
     <h3>Rules 5–7 · Lookout, speed, risk</h3>
     <ul><li>Keep a proper lookout by sight, hearing and all available means (radar, AIS).</li>
     <li>Always go at a safe speed — one that lets you stop in time for the conditions.</li>
@@ -269,6 +277,9 @@
     <ul><li>Crossing / head-on rules don't apply when you can't see each other.</li>
     <li>Radar target forward of the beam (not being overtaken): <b>avoid altering to port</b>.</li>
     <li>Hear a fog signal apparently <b>forward of your beam</b>: reduce speed to the minimum to keep steerage, take all way off if needed, and navigate with extreme caution.</li></ul>
+    <h3>Rules 36–37 · Attention and distress</h3>
+    <ul><li><b>Rule 36:</b> to attract attention, use a light or sound that can't be mistaken for any other signal, or point a searchlight at the danger without dazzling anyone.</li>
+    <li><b>Rule 37:</b> distress signals (Annex IV) include red flares, orange smoke, MAYDAY by radio, SOS, slowly raising and lowering outstretched arms, and continuously sounding a fog signal. Use them only when you're in distress and need help.</li></ul>
     <h3>Lights, shapes &amp; sound signals</h3>
     <p>These live in their own section: <b>💡 Lights &amp; sounds</b> on the home screen, with its own night and fog scenarios.</p>
   </template>
@@ -297,6 +308,7 @@
 <script src="js/21-watchkeeper-feedback.js"></script>
 <script src="js/22-watchkeeper-home.js"></script>
 <script src="js/23-study.js"></script>
+<script src="js/24-review.js"></script>
 <script src="js/99-boot.js"></script>
 </body>
 </html>
