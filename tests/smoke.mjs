@@ -344,6 +344,32 @@ const old = await oldPage.evaluate(async () => {
 await oldPage.close();
 ok(old.advanced && old.thrown > 1, `older iPhones: special vessels drawn without roundRect/findLast; the loop kept running after an error in one frame (${old.thrown} frames drawn)`);
 
+// 18. Small-phone layout (iPhone SE, 320 × 568) and navigation: every control fits and is tappable; rows appear only when needed.
+const se = await browser.newPage({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+await se.addInitScript(() => { let s = 20261121; Math.random = () => (s = (s * 16807) % 2147483647) / 2147483647; });
+await se.goto(url); await se.waitForTimeout(200);
+const lay = await se.evaluate(() => {
+  window.sound = () => {}; const box = el => el.getBoundingClientRect(), out = {};
+  wkStart(MISSIONS[0]);
+  const ctl = [...document.querySelectorAll('#pTele button, .helm button, .phorn:not([style*="none"]) button, #pHome, #pPause')].filter(b => b.offsetParent);
+  out.offscreen = ctl.filter(b => box(b).right > innerWidth + 0.5 || box(b).left < -0.5).map(b => b.textContent);
+  out.small = ctl.filter(b => box(b).height < 40).map(b => b.textContent);
+  out.chart = Math.round(box($('pStage')).height);
+  out.fogBtnInM1 = $('pFogBtn').style.display !== 'none';
+  wkStart(MISSIONS[4]); out.fogBtnInFog = $('pFogBtn').style.display !== 'none';
+  wkStart(MISSIONS[2]); out.passAtStart = $('pHornChan').style.display !== 'none';
+  // endless: 🏠 twice ends the watch and keeps the score
+  localStorage.removeItem('wkBest_m7'); wkStart(MISSIONS.find(m => m.endless)); P.score = 321; $('pHome').click(); $('pHome').click();
+  out.endWatch = { over: P.over, best: +localStorage.getItem('wkBest_m7'), head: $('dbHead').textContent }; closeOv('ovDebrief');
+  // practice debrief offers the next mission
+  wkStart(MISSIONS[0]); wkEnd(true); out.next = $('dbMis').textContent; closeOv('ovDebrief'); localStorage.removeItem('wkBest_m7'); localStorage.removeItem('wkBest_m1');
+  return out;
+});
+await se.close();
+ok(!lay.offscreen.length && !lay.small.length && lay.chart >= 160 && !lay.fogBtnInM1 && lay.fogBtnInFog && !lay.passAtStart &&
+   lay.endWatch.over && lay.endWatch.best === 321 && /Watch ended/.test(lay.endWatch.head) && /Next: Busy crossing/.test(lay.next),
+  `small phone: all controls on screen and ≥40 px ${JSON.stringify({ offscreen: lay.offscreen, small: lay.small })}, chart ${lay.chart} px; fog button only in fog; Pass row hidden until overtaking; ending a watch keeps ${lay.endWatch.best}; debrief offers "${lay.next}"`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }

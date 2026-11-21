@@ -62,6 +62,7 @@ function levelIntro(){
   $('lvLives').textContent='❤️'.repeat(lives)+'🤍'.repeat(Math.max(0,MAX_LIVES-lives));
   openOv('ovLevel');
 }
+$('lvQuit').onclick=()=>{closeOv('ovLevel');running=false;paused=true;show('home');};
 $('lvGo').onclick=()=>{closeOv('ovLevel');paused=false;show('app');load();};
 function startPractice(L,back){
   mode='practice';practiceSet=L;if(back)practiceBack=back;queue=L.pool.map(i=>varyOn?makeVariant(i,4,practiceBack[0]==='rules'):i);

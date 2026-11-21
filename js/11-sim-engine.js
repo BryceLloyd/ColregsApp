@@ -58,7 +58,7 @@ function loadQ(q){
   $('prog').textContent=`${qi+1} / ${queue.length}`;
   $('tags').innerHTML=`<span class="pill">${q.cat}</span>`+(q.bonus?' <span class="pill night">Bonus</span>':'');
   $('title').textContent=q.bonus?'Follow-up: same situation':q.cat==='Rules'?'Rules of the road':q.cat;
-  $('prompt').textContent=q.bonus?'Bonus point — no life lost if wrong.':q.order?'Tap the items in the right order.':'Choose the right answer.';
+  $('prompt').textContent=q.bonus?'Bonus point — no life lost if wrong.':q.order?'Tap the items in the right order.':'Tap the best answer.';
   mountQ(m,q,{wrongLabel:q.bonus?'❌ Not quite (no life lost)':(mode==='challenge'?'❌ Wrong — life lost':'❌ Not quite'),
     onAnswer:ok=>{if(!q.bonus)answered++;if(ok){score++;if(q.bonus)bonus++;}else if(!q.bonus){missed.push(q.cat);if(mode==='challenge')lives--;}hud();},
     nextText:nextLabel,onNext:nextQ});
