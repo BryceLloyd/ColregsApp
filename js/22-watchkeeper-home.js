@@ -22,6 +22,7 @@ function renderHome(){
     return `<button class="tile prac" data-m="${m.id}"><span class="pi">${M.icon}</span><b>${esc(m.name)}</b><small>${esc(M.tag)} · ${M.rules}</small>`+
       `<span class="pr">${starHTML(starsOf(m.id))}<small>${b?'Best '+b.toLocaleString():'Not sailed yet'}</small></span></button>`;}).join('');
   $('wkPractice').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>wkStart(MISSIONS.find(m=>m.id===b.dataset.m)));
+  renderRuleMap();renderInstall();
 }
 $('wkPlay').onclick=()=>wkStart(MISSIONS.find(m=>m.endless));
 
@@ -42,7 +43,7 @@ function endlessExtend(){const w=P.m.wps;while(w.length<P.wpi+3)w.push(endlessWp
 function endlessFeed(){
   const L=endlessLevel();
   if(L!==P.level){if(P.level)wkToast(`⬆ Level ${L}: ${ENDLESS_LEVELS[Math.min(L,ENDLESS_LEVELS.length)-1].name}`,'ok');P.level=L;
-    $('pTitle').textContent=`⚓ Endless · level ${L}`;}
+    $('pTitle').textContent=`⚓ Watchkeeper · level ${L}`;}
   P.m.gap=ENDLESS_LEVELS[Math.min(L,ENDLESS_LEVELS.length)-1].gap;
   if(P.spawnI<P.m.enc.length)return;
   const pool=ENDLESS_LEVELS.slice(0,L).flatMap(l=>l.pool);P.m.enc.push(pool[Math.floor(Math.random()*pool.length)]);

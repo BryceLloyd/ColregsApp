@@ -28,8 +28,11 @@
       <div class="best" id="wkBest"></div>
       <button class="playBig" id="wkPlay">⚓ Play</button>
     </div>
+    <div class="installHint" id="installHint" style="display:none"><span class="i">📲</span><span><b>Install on your iPhone</b><br>Share <span class="shr">⎋</span> › <b>Add to Home Screen</b>: full screen, offline, and your progress stays safe. It starts fresh, so bring progress across with a backup code (⚙️).</span><button class="ib" id="installOff" aria-label="Hide">✕</button></div>
     <h3 class="sh">Practice</h3>
     <div class="grid2" id="wkPractice"></div>
+    <h3 class="sh">Your rules</h3>
+    <div class="card rmap" id="ruleMap"></div>
     <h3 class="sh">More</h3>
     <button class="tile" id="goChallenge"><span class="e">🏆</span><b>Challenge</b><small>Random scenarios and questions · 7 levels · 3 lives · your best runs</small></button>
     <div class="grid2">
@@ -73,7 +76,27 @@
     <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pHints" checked style="width:22px;height:22px"><span><b>Allow hints</b><br><span class="small">During an encounter you can tap 💡 to see your role and what to do, for −20 points. Off = no hints at all.</span></span></label>
     <label class="note" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="pPauseErr" checked style="width:22px;height:22px"><span><b>Pause to explain mistakes</b><br><span class="small">In practice missions, stop the clock when you get something wrong, so you can read why before carrying on. Points and a one-line verdict always appear as you play.</span></span></label>
     <p class="small" style="margin:0">Buoyage region: <b>IALA Region A</b> (standard).</p>
+    <div class="note"><b>💾 Your progress</b><br><span class="small">Scores and your rule record are kept in this browser only. A private window, another browser, or the app installed on your Home Screen won't see them. Copy a backup code here and paste it there to move your progress.</span>
+      <textarea id="bkCode" rows="3" placeholder="Paste a backup code here to restore" style="width:100%;margin-top:8px;box-sizing:border-box;font-size:12px;border-radius:8px;background:#0b1628;color:var(--ink);border:1px solid var(--line);padding:6px"></textarea>
+      <div class="row" style="gap:8px;margin-top:6px"><button class="btn" id="bkCopy">Copy backup code</button><button class="btn sec" id="bkRestore">Restore</button></div>
+      <div class="small" id="bkMsg" style="margin-top:4px"></div></div>
   </div>
+</div></div>
+
+<!-- A rule on the rule map -->
+<div class="ov" id="ovRule"><div class="ovIn">
+  <div class="ovHead"><h2 id="rlTitle">Rule</h2><button class="ib" data-close>✕</button></div>
+  <div class="scroll stack" id="rlBody"></div>
+</div></div>
+
+<!-- First launch -->
+<div class="ov" id="ovWelcome"><div class="ovIn" style="justify-content:center;gap:10px">
+  <h2 style="margin:0">⚓ Welcome aboard</h2>
+  <div class="note">🧭 <b>Watchkeeper</b> puts you on the bridge. Steer to each waypoint through real traffic, and a referee judges every encounter against the COLREGs.</div>
+  <div class="note">⚙️ Steer with <b>↰10° / 10°↱</b>, set the engine, and sound the <b>horn</b> when you alter course. Tap a ship to check her bearing and CPA.</div>
+  <div class="note">📊 Every answer fills in your <b>rule map</b> on the home page, so you can see which rules to work on.</div>
+  <button class="btn" id="wcGo">🌊 Start with Open water</button>
+  <button class="btn sec" id="wcLook">Look around first</button>
 </div></div>
 
 <!-- Watchkeeper debrief -->
@@ -273,6 +296,7 @@
 <script src="js/20-watchkeeper-fog.js"></script>
 <script src="js/21-watchkeeper-feedback.js"></script>
 <script src="js/22-watchkeeper-home.js"></script>
+<script src="js/23-study.js"></script>
 <script src="js/99-boot.js"></script>
 </body>
 </html>

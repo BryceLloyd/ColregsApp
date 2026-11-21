@@ -53,7 +53,7 @@ function fogGrade(e,add){
 // Mission end: how long your fog signal was going.
 function fogEndGrade(){
   const F=P.fog;if(!F)return'';
-  const pct=P.time>0?Math.round(100*F.onT/P.time):0,p=pct>=90?100:pct>=50?0:-100;P.score+=p;
+  const pct=P.time>0?Math.round(100*F.onT/P.time):0,p=pct>=90?100:pct>=50?0:-100;P.score+=p;if(p)studyLog(['35'],p>0);
   return `<div class="enc"><h4><span>${p>=0?'✅':'❌'} Fog conduct</span><span style="color:${p>=0?'var(--ok)':'var(--bad)'}">${p>=0?'+':''}${p}</span></h4><ul>`+
     `<li style="color:${p>0?'#bfeccd':'#ffb3b3'}">${p>0?'✓':'✗'} Fog signal sounding ${pct}% of the time (Rule 35(a)) (${p>0?'+':''}${p})</li></ul></div>`;
 }

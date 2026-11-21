@@ -5,7 +5,8 @@ function makeQs(kind,n,topic){
   const nx=n>=3?Math.round(n*0.35):(Math.random()<0.4?1:0);
   const base=makeQs0(kind,n-nx,topic);
   if(kind==='lightsound')return base;
-  return shuffle(base.concat(extraQs(kind,nx,topic)));
+  base.forEach(q=>{if(q)q.kind??=kind;});
+  return shuffle(base.concat(extraQs(kind,nx,topic))).map(q=>{if(q)q.kind??=kind;return q;});
 }
 function makeQs0(kind,n,topic){
   const qs=[];

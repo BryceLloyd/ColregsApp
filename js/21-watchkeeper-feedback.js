@@ -40,7 +40,7 @@ function popsDraw(c,x,y){
 function showResult(e){
   if(!e.collided&&e.notes.some(n=>n.txt.startsWith('Close quarters'))){P.hull--;e.closeCall=true;
     e.notes.push({ok:false,txt:'Close call: that cost a heart',p:0});popText('💔 Close call',false);}
-  popPoints(e);P.lastRes={e,t:P.time};if(P.m.endless)endlessAfter(e);
+  studyEnc(e);popPoints(e);P.lastRes={e,t:P.time};if(P.m.endless)endlessAfter(e);
   if(e.notes.some(n=>n.ok===false)&&pauseOnMistakes()){P.paused=true;P.mistakePause=true;$('pPause').textContent='▶';}
   const h=$('pHint');if(h)h.dataset.k='';
 }
