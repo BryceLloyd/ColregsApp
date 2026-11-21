@@ -22,7 +22,7 @@ function renderRecords(){
       `<p class="small">Kept on this device for now. A shared leaderboard for Watchkeeper is planned.</p>`+
       `<h3 class="sh">Practice missions</h3>`+MISSIONS.filter(m=>MISSION_META[m.id]).map(m=>{const b=bestOf(m.id);
         return `<div class="recRow"><span>${MISSION_META[m.id].icon} ${esc(m.name)}</span>${starHTML(starsOf(m.id))}<b>${b?b.toLocaleString():'–'}</b></div>`;}).join('');
-    const n=$('recNick');n.onchange=()=>{nick=n.value.trim().slice(0,20)||'Sailor';n.value=nick;$('nick').value=nick;try{localStorage.setItem('colregsNick',nick);}catch(e){}};
+    const n=$('recNick');n.onchange=()=>{nick=n.value.trim().slice(0,20)||'Sailor';n.value=nick;try{localStorage.setItem('colregsNick',nick);}catch(e){}};
   }else if(recTab==='ch'){
     B.innerHTML=`<p class="small">Your best Challenge runs: score, level reached and time. Personal, kept on this device.</p>`+boardHTML(10)+
       `<button class="btn" id="recCh">🏆 Start a Challenge</button>`;

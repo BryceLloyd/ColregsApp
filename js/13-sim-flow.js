@@ -46,11 +46,8 @@ $('gHome').onclick=()=>{
 
 // ---------- game flow ----------
 let nick='';try{nick=localStorage.getItem('colregsNick')||''}catch(e){}
-$('nick').value=nick;
 $('goChallenge').onclick=()=>openOv('ovStart');
 function startChallenge(){
-  nick=$('nick').value.trim().slice(0,20)||nick||'Sailor';$('nick').value=nick;
-  try{localStorage.setItem('colregsNick',nick)}catch(e){}
   mode='challenge';level=1;lives=MAX_LIVES;score=0;bonus=0;answered=0;missed=[];gameTime=0;replayChoice=null;running=true;
   closeOv('ovStart');levelIntro();
 }
