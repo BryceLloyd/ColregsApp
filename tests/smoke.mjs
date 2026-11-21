@@ -50,7 +50,7 @@ const wk = await page.evaluate(() => {
   for (let i = 0; i < 20000 && !P.over; i++) {
     const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
     if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { o.th = norm(e.h0 + (e.cl.type === 'overtaking' ? -40 : 50)); e.bot = 1; P.horn.push({ t: P.time, p: e.cl.type === 'overtaking' ? 'SS' : 'S' }); } }
-    else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
+    else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && Math.abs(norm(o.th - o.h)) < 1) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05);
   }
   return { over: P.over, hull: P.hull, score: P.score, encs: P.encs.length, bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length };
@@ -67,7 +67,7 @@ const back = await page.evaluate(() => {
       if (e.cl.type === 'overtaking' && !seen.has(e.id)) { seen.add(e.id); e.drop = 1; }
       if (e.drop) { o.tv = 4; o.th = P.ais.find(a => a.id === e.id).h; } // slow to her speed and follow in her wake
       else if (e.cl.role === 'give' && !e.bot) { o.tv = 12; o.th = norm(e.h0 + (e.cl.type === 'overtaking' ? -40 : 50)); e.bot = 1; P.horn.push({ t: P.time, p: e.cl.type === 'overtaking' ? 'SS' : 'S' }); } }
-    else { o.tv = 12; { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
+    else { o.tv = 12; { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && Math.abs(norm(o.th - o.h)) < 1) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05);
   }
   const d = P.encs.find(e => e.droppedBack);
@@ -96,7 +96,7 @@ const r18 = await page.evaluate(() => {
     for (let i = 0; i < 20000 && !P.over; i++) {
       const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
       if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { o.th = norm(e.h0 + 50); e.bot = 1; P.horn.push({ t: P.time, p: 'S' }); } }
-      else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
+      else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && Math.abs(norm(o.th - o.h)) < 1) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
       wkTick(0.05);
     }
     runs.push({ t, n: P.spawnI, ok: P.hull === 3 && P.encs.every(e => e.cl.r18 && e.cl.role === 'give' && e.vt === t && !e.notes.some(n => n.ok === false)) }); // n = ships spawned (a ship can give a second encounter if you close on her again)
@@ -135,7 +135,7 @@ const m2 = await page.evaluate(() => {
     if (turnFor && turnFor.done) turnFor = null;
     for (const e of act) if (e.cl.role === 'give' && !e.bot) { e.bot = 1;
       if (!turnFor) { turnFor = e; const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
-    if (!act.length) { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
+    if (!act.length) { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && Math.abs(norm(o.th - o.h)) < 1) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05);
   }
   return { over: P.over, hull: P.hull, score: P.score, spawned: P.spawnI, groups: P.m.enc.length, encs: P.encs.length,
@@ -211,7 +211,7 @@ const night = await page.evaluate(() => {
   wkStart(MISSIONS[3]);
   for (let i = 0; i < 20000 && !P.over; i++) { const o = P.own, act = P.encs.filter(e => !e.done && e.announced);
     if (act.length) { const e = act[0]; if (e.cl.role === 'give' && !e.bot) { const d = e.cl.type === 'overtaking' ? -40 : 50; o.th = norm(e.h0 + d); e.bot = 1; P.horn.push({ t: P.time, p: d > 0 ? 'S' : 'SS' }); } }
-    else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && norm(o.th - o.h) === 0) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
+    else { { const wp = P.m.wps[Math.min(P.wpi, P.m.wps.length - 1)], wb = brg(o, { x: wp[0], y: wp[1] }), risk = h => P.ais.some(a => { if (!P.encs.findLast(x => x.id === a.id)?.done) return false; const c = cpaOf({ x: o.x, y: o.y, h, v: o.v }, a); return c.range < 2 && c.cpa < 0.4 && c.tcpa > 0; }); if (!risk(wb)) o.th = wb; else if (risk(o.h) && Math.abs(norm(o.th - o.h)) < 1) o.th = norm(o.h + 40); } } // resume only once the new course is clear; turn away from a ship you're closing on again
     wkTick(0.05); if (i % 40 === 0) { wkDraw(); wkUI(); } }
   const me = { x: 0, y: 0, h: 0 }, sw = lightsWords({ type: 'fishing', x: 1, y: 1, h: 270 }, me), hd = lightsWords({ type: 'power', x: 0, y: 2, h: 180 }, me);
   return { over: P.over, hull: P.hull, n: P.encs.length, bad: P.encs.filter(e => e.notes.some(n => n.ok === false)).length,
@@ -405,6 +405,26 @@ ok(welcome.at && welcome.closed && !welcome.again && st.cites.join('|') === '9,3
    st.chips === 33 && /l2/.test(st.chip16) && /l1/.test(st.chip15) && st.sheet.open && st.sheet.title === 'Rule 14 · Head-on' && /Open water/.test(st.sheet.play || '') &&
    st.restored && !st.badCode && st.install === 'none' && st.title === '⚓ Watchkeeper · level 1',
   `study record: welcome on first launch only; quiz, scenario (${st.scenRule}) and Watchkeeper answers logged by rule; rule map ${st.chips} rules ("${st.sum}"); sheet "${st.sheet.title}"; backup restores; title "${st.title}" ${JSON.stringify(st.r)}`);
+
+// 20. Mistakes deck and mock exam.
+const rv = await page.evaluate(() => {
+  const out = {}, pick = right => { const q = qRun.q, box = $('qbox');
+    if (q.order) { const idx = q.items.map(s => q.shuf.indexOf(s)); (right ? idx : idx.slice().reverse()).forEach(j => box.querySelector(`[data-j="${j}"]`).click()); }
+    else box.querySelector(`[data-j="${q.opts.findIndex(o => right ? o.ok : !o.ok)}"]`).click();
+    const nb = box.querySelector('.qnext'); if (nb && nb.style.display !== 'none') nb.click(); };
+  localStorage.removeItem('colregsStudy'); study = { v: 1, r: {} };
+  studyLog(['17'], false); out.inDeck = deckDue().join();
+  startReview(); pick(true); const d17 = study.d['17']; out.hit = d17 && d17.b === 1 && Math.round((d17.due - Date.now()) / 864e5);
+  studyLog(['35'], false); startReview(); pick(false); out.retryMin = Math.round((study.d['35'].due - Date.now()) / 60e3); out.dueAfterMiss = deckDue().join();
+  show('home'); out.tile = $('rvTile').textContent;
+  startMock(); out.mockN = 0; for (let i = 0; i < 40 && $('qbox'); i++) { pick(true); out.mockN++; }
+  out.mock = $('secBody').innerText.slice(0, 60).replace(/\s+/g, ' '); out.best = JSON.parse(localStorage.getItem('colregsMockBest') || 'null');
+  out.covered = (() => { const c = new Set(reviewPool().flatMap(q => q.keys)); return Object.keys(RULE_INFO).filter(k => !c.has(k)); })();
+  show('home'); return out;
+});
+ok(rv.inDeck === '17' && rv.hit === 1 && rv.retryMin === 10 && rv.dueAfterMiss === '' && /Next review in 10 min/.test(rv.tile) &&
+   rv.mockN === 30 && /30 \/ 30/.test(rv.mock) && /Pass/.test(rv.mock) && rv.best?.score === 30 && !rv.covered.length,
+  `mistakes deck and mock exam: a miss goes in the deck, a right review moves it out ${rv.hit} day, a missed review comes back in ${rv.retryMin} min; mock exam ${rv.mockN} questions "${rv.mock}"; rules with no quiz questions: ${rv.covered.join(',') || 'none'}`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();

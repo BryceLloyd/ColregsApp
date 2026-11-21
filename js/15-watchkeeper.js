@@ -98,6 +98,11 @@ function aiTick(a,dt){
   if(a.state?.startsWith('chan'))return chanAiTick(a,dt);
   if(P.m.fog&&a.state==='cruise'){const c=cpaOf(a,P.own);if(c.cpa<0.5&&c.tcpa>0&&c.range<2.2){ // in fog every ship acts: starboard for a ship forward of her beam
     if(Math.abs(norm(brg(a,P.own)-a.h))<90){a.th=norm(a.h0+35);a.state='avoid';}else a.state='stand';}}
+  if((a.state==='resume'||a.state==='cruise')&&!a.rogue&&P.encs.findLast(x=>x.id===a.id)?.done){ // her encounter is over, but she's closing on you again
+    const c=cpaOf(a,P.own);if(c.tcpa>0&&c.cpa<0.25&&c.range<1.2){const cl=classify(a,P.own);
+      if(cl.role==='give'){const rb=norm(brg(a,P.own)-a.h),turns=cl.type==='overtaking'?(rb>0?[-30,-60,-90]:[30,60,90]):[30,45,60,90,120];
+        const d=turns.find(d=>{const k=cpaOf({x:a.x,y:a.y,h:norm(a.h+d),v:a.v},P.own);return k.tcpa<=0||k.cpa>=0.3;})??turns[turns.length-1]; // the smallest turn that clears you
+        a.th=norm(a.h+d);a.state='avoid';}}}
   aiAvoidAis(a);
   const c=cpaOf(a,P.own),cl=classify(a,P.own),risk=c.cpa<0.35&&c.tcpa>0&&c.range<3.5;
   if(a.state==='cruise'&&risk&&c.range<2.2&&!a.rogue){

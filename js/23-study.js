@@ -17,6 +17,7 @@ function rulesIn(t){const out=new Set();
 
 function studyLog(keys,ok){if(!keys?.length)return;const now=Date.now();
   for(const k of new Set(keys)){const x=study.r[k]||(study.r[k]={n:0,ok:0,h:''});x.n++;if(ok)x.ok++;x.h=(x.h+(ok?'1':'0')).slice(-10);x.t=now;}
+  if(!ok&&typeof deckMiss==='function')deckMiss(keys); // into the mistakes deck
   studySave();}
 
 // Quiz and Challenge questions: the rules their explanation cites, otherwise worked out from what they're about.
@@ -91,7 +92,7 @@ function renderRuleMap(){
   const all=Object.keys(RULE_INFO),tried=all.filter(k=>ruleLevel(k)>0).length,strong=all.filter(k=>ruleLevel(k)===3).length,weak=weakRules();
   $('ruleMap').innerHTML=`<div class="rmSum">${tried?`<b>${tried}</b> of ${all.length} practised · <b>${strong}</b> strong`:'Play or answer questions and each rule fills in here.'}</div>`+
     (weak.length?`<div class="rmWeak">Work on: ${weak.map(k=>`<button class="rmLink" data-r="${k}">${ruleName(k)}</button>`).join(' ')}</div>`:'')+
-    RULE_GROUPS.map(([g,ks])=>`<div class="rmG">${g}</div><div class="rmRow">${ks.map(k=>`<button class="rc l${ruleLevel(String(k))}${isNaN(k)?' w':''}" data-r="${k}" aria-label="${ruleName(String(k))}">${isNaN(k)?RULE_INFO[k][0].split(' ')[0]:k}</button>`).join('')}</div>`).join('')+
+    RULE_GROUPS.map(([g,ks])=>`<div class="rmG">${g}</div><div class="rmRow">${ks.map(k=>`<button class="rc l${ruleLevel(String(k))}${isNaN(k)?' w':''}" data-r="${k}" aria-label="${ruleName(String(k))}">${k==='IALA'?'Buoyage':k==='Flags'?'Flags':k}</button>`).join('')}</div>`).join('')+
     `<div class="rmKey"><span class="rc l0"></span>not tried <span class="rc l1"></span>needs work <span class="rc l2"></span>getting there <span class="rc l3"></span>strong</div>`;
   $('ruleMap').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>openRule(b.dataset.r));
 }

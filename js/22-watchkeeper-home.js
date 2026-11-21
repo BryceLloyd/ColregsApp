@@ -22,7 +22,7 @@ function renderHome(){
     return `<button class="tile prac" data-m="${m.id}"><span class="pi">${M.icon}</span><b>${esc(m.name)}</b><small>${esc(M.tag)} · ${M.rules}</small>`+
       `<span class="pr">${starHTML(starsOf(m.id))}<small>${b?'Best '+b.toLocaleString():'Not sailed yet'}</small></span></button>`;}).join('');
   $('wkPractice').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>wkStart(MISSIONS.find(m=>m.id===b.dataset.m)));
-  renderRuleMap();renderInstall();
+  renderRuleMap();renderInstall();renderStudyTiles();
 }
 $('wkPlay').onclick=()=>wkStart(MISSIONS.find(m=>m.endless));
 
