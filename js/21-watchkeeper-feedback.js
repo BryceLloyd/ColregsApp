@@ -47,7 +47,7 @@ function resSummary(e){
 // else needs your attention. Returns true if it drew the bar.
 function fbHintBar(h){
   const R=P.lastRes,active=P.encs.some(e=>!e.done&&e.announced);
-  if(!R||(!P.mistakePause&&(active||P.time-R.t>8)))return false;
+  if(!R||(!P.mistakePause&&(active||P.time-R.t>16)))return false;
   const key='res'+R.e.id+R.t+(P.mistakePause?'p':'');if(h.dataset.k===key)return true;h.dataset.k=key;
   const bad=R.e.notes.some(n=>n.ok===false);h.className=bad?'risk':'';
   h.innerHTML=`<span class="sum">${resSummary(R.e)}</span><button class="more">${P.mistakePause?'Why? ›':'Details ›'}</button>`+

@@ -49,7 +49,7 @@ function wkDraw(){
     else{c.fillStyle='#f2f2f2';c.fillRect(-3,1,6,4);}
     c.restore();if(!isOwn)wkShapes(c,b.type,s.x+31,s.y-4);return s;};
   for(const a of P.ais){const s=radarOnly()?S2(a):ship(a,'#e8742c',false);if(radarOnly())nightEcho(c,s);c.fillStyle='#fff';c.font='10.5px sans-serif';c.textAlign='center';c.fillText(a.name,s.x,s.y+22);
-    const e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);if(e){c.strokeStyle='rgba(255,90,90,.9)';c.lineWidth=1.5;c.beginPath();c.arc(s.x,s.y,16,0,7);c.stroke();}
+    const e=P.encs.find(x=>x.id===a.id&&!x.done&&x.announced);if(e||a.warnUntil>P.time){c.strokeStyle='rgba(255,90,90,.9)';c.lineWidth=1.5;c.beginPath();c.arc(s.x,s.y,16,0,7);c.stroke();}
     if(P.sel===a.id){c.strokeStyle='#ffd98a';c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.arc(s.x,s.y,20,0,7);c.stroke();c.setLineDash([]);}}
   ship(o,'#2b7de9',true);
   // compass badge
@@ -57,6 +57,7 @@ function wkDraw(){
   c.fillStyle='#ff6b6b';c.beginPath();c.moveTo(0,-12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.fillStyle='rgba(255,255,255,.75)';c.beginPath();c.moveTo(0,12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.restore();
   if(P.fog)fogDraw(c,cy0,R);
   if(P.m.night)nightBridge();
+  for(const b of P.booms){const age=P.time-b.t;if(age>4)continue;const s=S2(b);c.globalAlpha=Math.max(0,1-age/4);c.font='26px sans-serif';c.textAlign='center';c.fillText('💥',s.x,s.y+9);c.globalAlpha=1;}
   popsDraw(c,PW/2,cy0);
   if(P.paused&&!P.mistakePause){c.fillStyle='rgba(0,0,0,.45)';c.fillRect(0,0,PW,PH);c.fillStyle='#fff';c.font='bold 20px sans-serif';c.textAlign='center';c.fillText('⏸ Paused',PW/2,PH/2);}
 }

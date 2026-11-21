@@ -2,7 +2,7 @@
 // ---------- controls ----------
 let helmTimer=null;
 document.querySelectorAll('.helm [data-dh]').forEach(b=>{
-  const step=()=>{if(!P||P.over)return;P.own.th=norm(P.own.th+(+b.dataset.dh));wkUI();};
+  const step=()=>{if(!P||P.over)return;const o=P.own,lead=Math.max(-170,Math.min(170,norm(o.th-o.h)+(+b.dataset.dh)));o.th=norm(o.h+lead);wkUI();}; // capped at 170° ahead so holding the helm keeps turning the same way
   b.addEventListener('pointerdown',e=>{e.preventDefault();step();clearInterval(helmTimer);helmTimer=setInterval(step,320);});
   ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearInterval(helmTimer)));
 });
