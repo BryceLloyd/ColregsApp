@@ -81,7 +81,7 @@ const SCEN=[
  bad:"In fog the crossing rules don't apply. Hearing a fog signal forward of the beam means reduce speed to bare steerage way, or take all way off.",
  tip:"In fog, sound one prolonged blast every 2 minutes yourself (power, making way)."},
 {cat:"Stand-on",title:"Stand-on, but she isn't giving way",prompt:"You've been standing on. The vessel on your port side hasn't altered and didn't answer your 5 short blasts. She's now very close.",
- other:{type:"power",h:90,v:1,T:4},freezeAt:2.45,correct:["stbd","slow"],best:"stbd",rule:"Rule 17(b) – Stand-on must act",
+ other:{type:"power",h:90,v:1,T:4},freezeAt:2.1,correct:["stbd","slow"],best:"stbd",rule:"Rule 17(b) – Stand-on must act",
  ok:"When collision can't be avoided by the give-way vessel alone, you must act. Turn to starboard, away from her, and/or take all way off.",
  bad:"Standing on into a collision is not allowed (17(b)). Turning to port towards a vessel on your port side is the worst choice: she may turn to starboard at the last moment and you'd both turn into each other (the same reason as Rule 17(c)).",
  tip:"Signal your manoeuvre: • (starboard) or • • • (going astern)."},

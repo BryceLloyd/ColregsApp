@@ -7,6 +7,9 @@ function unlockAudio(){const c=audioCtx();if(!c)return;try{const s=c.createBuffe
   if(c.state==='running')['pointerdown','touchend','click'].forEach(ev=>document.removeEventListener(ev,unlockAudio,true));}
 ['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,unlockAudio,true));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&actx&&actx.state!=='running')try{actx.resume();}catch(e){}});
+function chime(){if(muted||!audioCtx())return;const t0=actx.currentTime+0.05;
+  [523,659,784,1047].forEach((fr,i)=>{const o=actx.createOscillator(),g=actx.createGain(),at=t0+i*0.11;o.type='triangle';o.frequency.value=fr;
+    g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(0.16,at+0.02);g.gain.exponentialRampToValueAtTime(0.001,at+0.6);o.connect(g);g.connect(actx.destination);o.start(at);o.stop(at+0.65);});}
 function sound(p,vol=1){
   if(muted)return;
   if(!audioCtx())return;

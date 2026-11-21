@@ -32,7 +32,7 @@ function varyAngle(V){
     if(Math.abs(Math.abs(g.rb)-Math.abs(b0.rb))>30)continue;
     if((Math.abs(b0.rb)<=112.5)!==(Math.abs(g.rb)<=112.5)||(Math.abs(b0.rb)<90)!==(Math.abs(g.rb)<90))continue;
     if(aspCls(g.asp)!==aspCls(b0.asp)||g.fd<2.2)continue;
-    if(!V.correct.every(k=>simOutcome(cand,k).md>=0.6))continue;
+    if(!V.correct.every(k=>simOutcome(cand,k).md>=0.9))continue;
     return cand.other;
   }
   return null;
@@ -71,6 +71,8 @@ function makeVariant(i,lvl,noNight){
       tags.push('rot');}
   }
   V.vtags=tags;
+  // every correct answer must still pass well clear; if a change broke that, use the scenario as written
+  if(tags.length&&base.other.type!=='buoy'&&!V.correct.every(k=>simOutcome(V,k).md>=0.9))return i;
   return tags.length?{t:'sim',sc:V}:i;
 }
 function soundOpts(right,pool){return shuffle([right,...shuffle(pool.filter(p=>p!==right)).slice(0,3)]).map(p=>({h:`<span style="font-size:18px;letter-spacing:3px">${patHTML(p)}</span>`,ok:p===right}));}
