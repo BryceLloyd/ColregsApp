@@ -97,11 +97,9 @@ function wkUI(){
   const act=P.encs.filter(e=>!e.done&&e.announced),h=$('pHint');
   if(fbHintBar(h))return renderToasts();
   if(act.length){const e=act[0];
-    // how far you've altered since she appeared: a fact about your own ship, not advice
-    const dd=Math.round(norm(o.th-e.h0)),dv=Math.round(o.tv-e.v0),you=Math.abs(dd)>=5||Math.abs(dv)>=1?`<span class="you">You: ${Math.abs(dd)>=5?`${dd>0?'+':'−'}${Math.abs(dd)}°`:''}${Math.abs(dd)>=5&&Math.abs(dv)>=1?', ':''}${Math.abs(dv)>=1?`${o.tv.toFixed(0)} kn`:''}</span>`:'';
-    const key=e.id+(e.hinted?'h':'n')+P.hints+you;if(h.dataset.k===key)return renderToasts();h.dataset.k=key;
-    if(e.hinted){h.className='';h.textContent='💡 '+encHint(e);h.insertAdjacentHTML('beforeend',you);}
-    else{h.className='risk';h.innerHTML=`<span class="al">${esc(encAlert(e))}${you}</span>`+(P.hints?` <button id="pHintBtn" class="hintBtn" aria-label="Hint, costs 20 points">💡 −20</button>`:'');
+    const key=e.id+(e.hinted?'h':'n')+P.hints;if(h.dataset.k===key)return renderToasts();h.dataset.k=key;
+    if(e.hinted){h.className='';h.textContent='💡 '+encHint(e);}
+    else{h.className='risk';h.innerHTML=`<span class="al">${esc(encAlert(e))}</span>`+(P.hints?` <button id="pHintBtn" class="hintBtn" aria-label="Hint, costs 20 points">💡 −20</button>`:'');
       const hb=$('pHintBtn');if(hb)hb.onclick=()=>{e.hinted=true;P.score-=20;e.hintCost=true;popText('−20 hint',false);wkUI();};}}
   else{h.dataset.k='';h.className='calm';h.textContent=P.wpi<P.m.wps.length?`Steer for waypoint ${P.wpi+1}: ${String(Math.round(b)%360).padStart(3,'0')}°, ${d.toFixed(1)} nm.`:'';}
   renderToasts();
