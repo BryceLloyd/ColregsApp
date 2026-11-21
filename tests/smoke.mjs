@@ -277,7 +277,7 @@ const home = await page.evaluate(() => {
   localStorage.removeItem('wkBest_m1'); localStorage.removeItem('wkBest_m3'); localStorage.removeItem('wkBest_m7'); localStorage.removeItem('wkBestLevel'); window.sound = snd;
   return { tiles, stars, bestBefore, started, lostHeart, res, bestAfter };
 });
-ok(home.tiles.length === 6 && home.stars.join() === '3,0,1' && /No watch kept yet/.test(home.bestBefore) && home.started.endless && home.started.view === 'play' && /Watchkeeper · level 1/.test(home.started.title) &&
+ok(home.tiles.length === 6 && home.stars.join() === '3,0,1' && /No watch kept yet/.test(home.bestBefore) && home.started.endless && home.started.view === 'play' && /⚓ Level 1$/.test(home.started.title) &&
    home.lostHeart && home.res.over === true && /out of hearts/.test(home.res.head) && (home.res.score > 0 ? home.res.best === home.res.score && /best watch/.test(home.bestAfter) : true),
   `home & endless: ${home.tiles.length} practice tiles, stars ${home.stars.join('/')}; Play starts "${home.started.title}"; unattended watch ended at level ${home.res.level} (${home.res.score} pts): "${home.res.head}"`);
 
@@ -403,7 +403,7 @@ const st = await page.evaluate(() => {
 ok(welcome.at && welcome.closed && !welcome.again && st.cites.join('|') === '9,34|13,14,15,16,17|19|' && st.light === '26' && st.buoy === 'IALA' &&
    st.r[14]?.ok === 2 && st.r[8]?.n === 2 && st.r[8]?.ok === 1 && st.r[16]?.ok === 1 && st.r[15]?.ok === 0 && st.scenLogged &&
    st.chips === 33 && /l2/.test(st.chip16) && /l1/.test(st.chip15) && st.sheet.open && st.sheet.title === 'Rule 14 · Head-on' && /Open water/.test(st.sheet.play || '') &&
-   st.restored && !st.badCode && st.install === 'none' && st.title === '⚓ Watchkeeper · level 1',
+   st.restored && !st.badCode && st.install === 'none' && st.title === '⚓ Level 1',
   `study record: welcome on first launch only; quiz, scenario (${st.scenRule}) and Watchkeeper answers logged by rule; rule map ${st.chips} rules ("${st.sum}"); sheet "${st.sheet.title}"; backup restores; title "${st.title}" ${JSON.stringify(st.r)}`);
 
 // 20. Mistakes deck and mock exam.
@@ -425,6 +425,23 @@ const rv = await page.evaluate(() => {
 ok(rv.inDeck === '17' && rv.hit === 1 && rv.retryMin === 10 && rv.dueAfterMiss === '' && /Next review in 10 min/.test(rv.tile) &&
    rv.mockN === 30 && /30 \/ 30/.test(rv.mock) && /Pass/.test(rv.mock) && rv.best?.score === 30 && !rv.covered.length,
   `mistakes deck and mock exam: a miss goes in the deck, a right review moves it out ${rv.hit} day, a missed review comes back in ${rv.retryMin} min; mock exam ${rv.mockN} questions "${rv.mock}"; rules with no quiz questions: ${rv.covered.join(',') || 'none'}`);
+
+// 21. Endless keeps getting harder: night, fog and daylight come round after level 5, with less time between ships.
+const esc2 = await page.evaluate(() => {
+  window.sound = () => {}; wkStart(MISSIONS.find(m => m.endless)); const out = [];
+  const at = L => { while (P.encs.filter(e => e.done && !e.silent).length < (L - 1) * 5) P.encs.push({ done: true, silent: false, notes: [] });
+    P.spawnI = P.m.enc.length; endlessFeed(); const k = P.m.enc[P.m.enc.length - 1];
+    return { L: P.level, phase: P.phase || 'day', night: !!P.m.night, fog: !!P.m.fog, bridge: $('pBridge').style.display, fogBtn: $('pFogBtn').style.display !== 'none', gap: P.m.gap, title: $('pTitle').textContent, k: [].concat(k).join('+') }; };
+  for (const L of [5, 6, 7, 8, 9, 10, 11, 15]) out.push(at(L));
+  // at night, no "being overtaken" ships
+  let ot = 0; P.encs.length = 0; for (let i = 0; i < 40; i++) P.encs.push({ done: true, silent: false, notes: [] }); endlessSetPhase('night');
+  for (let i = 0; i < 200; i++) { P.spawnI = P.m.enc.length; endlessFeed(); if ([].concat(P.m.enc[P.m.enc.length - 1]).some(x => x.startsWith('overtaken'))) ot++; }
+  P = null; show('home'); return { out, ot };
+});
+const ph = esc2.out.map(o => o.phase).join(',');
+ok(ph === 'day,night,fog,day,night,fog,day,night' && esc2.out[1].bridge === 'block' && esc2.out[2].fog && esc2.out[2].fogBtn && esc2.out[2].bridge === 'none' && !esc2.out[3].fog &&
+   /Level 6 🌙/.test(esc2.out[1].title) && esc2.out[7].gap < esc2.out[3].gap && esc2.ot === 0,
+  `endless escalation: phases by level 5–11, 15: ${ph}; gaps ${esc2.out.map(o => o.gap).join('/')}; titles "${esc2.out[1].title}", "${esc2.out[2].title}"; overtaken at night: ${esc2.ot}`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();

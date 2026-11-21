@@ -63,7 +63,7 @@ function wkDraw(){
   // compass badge
   c.save();c.translate(20,22);c.fillStyle='rgba(5,12,24,.5)';c.beginPath();c.arc(0,0,15,0,7);c.fill();c.rotate(-o.h*D2R);
   c.fillStyle='#ff6b6b';c.beginPath();c.moveTo(0,-12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.fillStyle='rgba(255,255,255,.75)';c.beginPath();c.moveTo(0,12);c.lineTo(4,0);c.lineTo(-4,0);c.fill();c.restore();
-  if(P.fog)fogDraw(c,cy0,R);
+  if(P.fog&&P.m.fog)fogDraw(c,cy0,R);
   if(P.m.night)nightBridge();
   for(const b of P.booms){const age=P.time-b.t;if(age>4)continue;const s=S2(b);c.globalAlpha=Math.max(0,1-age/4);c.font='26px sans-serif';c.textAlign='center';c.fillText('💥',s.x,s.y+9);c.globalAlpha=1;}
   popsDraw(c,PW/2,cy0);

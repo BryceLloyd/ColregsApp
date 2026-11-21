@@ -32,8 +32,27 @@ const ENDLESS_LEVELS=[
   {name:'Mixed vessel types (Rule 18)',pool:['headon:r18','xport:r18','xstbd:r18'],gap:3},
   {name:'Two ships at once',pool:[['xstbd','xport'],['headon','xstbd:r18'],['xstbd:r18','xport']],gap:3},
   {name:'Some ships ignore the rules',pool:['xport?','overtaken?'],gap:2.5},
-  {name:'Traffic builds',pool:[],gap:1.5}];
-const endlessLevel=()=>Math.min(1+Math.floor(P.encs.filter(e=>e.done&&!e.silent).length/5),ENDLESS_LEVELS.length+3);
+  {name:'Traffic builds',pool:[],gap:1.5},
+  {name:'Night watch: read her lights',pool:['headon:r18','xport:r18','xstbd'],gap:2,phase:'night'},
+  {name:'Fog bank: radar only',pool:['headon','xstbd','xport','overtaking'],gap:2.5,phase:'fog'},
+  {name:'Daylight, and busier',pool:[['xstbd','xport:r18'],['headon','xport?'],'overtaken?'],gap:1.2,phase:'day'}];
+// After the last level, night, fog and daylight keep coming round, with less time between ships each round.
+const PHASE_CYCLE=['night','fog','day'],PHASE_NAME={night:'Night watch',fog:'Fog bank',day:'Daylight'},PHASE_ICON={night:' 🌙',fog:' 🌫',day:''};
+const endlessLevel=()=>Math.min(1+Math.floor(P.encs.filter(e=>e.done&&!e.silent).length/5),99);
+const endlessPhase=L=>L<=ENDLESS_LEVELS.length?ENDLESS_LEVELS[L-1].phase||'day':PHASE_CYCLE[(L-ENDLESS_LEVELS.length-1)%3];
+function endlessGap(L){const ph=endlessPhase(L);if(L<=ENDLESS_LEVELS.length)return ENDLESS_LEVELS[L-1].gap;
+  const g=Math.max(0.8,1.2-0.1*Math.floor((L-ENDLESS_LEVELS.length-1)/3));return ph==='fog'?Math.max(g,2):g;} // fog needs room to slow down
+const endlessName=L=>L<=ENDLESS_LEVELS.length?ENDLESS_LEVELS[L-1].name:`${PHASE_NAME[endlessPhase(L)]}, heavier traffic`;
+const endlessTitle=()=>{$('pTitle').textContent=`⚓ Level ${P.level}${PHASE_ICON[P.phase||'day']}`;};
+// Night or fog for a while: the chart becomes radar, and at night the bridge view shows her lights.
+function endlessSetPhase(ph){
+  P.phase=ph;P.m.night=ph==='night';P.m.fog=ph==='fog';
+  $('pBridge').style.display=P.m.night?'block':'none';
+  if(P.m.fog)P.fog??=fogInit({fog:true});else if(P.fog)P.fog.on=false;
+  $('pFogBtn').style.display=P.m.fog?'':'none';fogUI();wkResize();endlessTitle();
+  wkToast({night:'🌙 Night falls. Other ships are radar echoes: read their lights in the bridge view.',
+    fog:'🌫 Fog bank: under half a mile visibility, radar only. Slow to a safe speed and sound your fog signal (Rules 19 & 35).',day:'☀️ Daylight again.'}[ph],'info');
+}
 // The route: legs of 4.5–5.5 nm that wander up to 40° either side of north.
 function endlessWp(from){const h=(Math.random()*80-40)*D2R,d=4.5+Math.random();return [from[0]+Math.sin(h)*d,from[1]+Math.cos(h)*d];}
 function endlessSetup(m){const wps=[[0.6,5]];while(wps.length<4)wps.push(endlessWp(wps[wps.length-1]));
@@ -41,12 +60,14 @@ function endlessSetup(m){const wps=[[0.6,5]];while(wps.length<4)wps.push(endless
 function endlessExtend(){const w=P.m.wps;while(w.length<P.wpi+3)w.push(endlessWp(w[w.length-1]));}
 // Keep one ship queued, drawn from every level unlocked so far.
 function endlessFeed(){
-  const L=endlessLevel();
-  if(L!==P.level){if(P.level)wkToast(`⬆ Level ${L}: ${ENDLESS_LEVELS[Math.min(L,ENDLESS_LEVELS.length)-1].name}`,'ok');P.level=L;
-    $('pTitle').textContent=`⚓ Watchkeeper · level ${L}`;}
-  P.m.gap=ENDLESS_LEVELS[Math.min(L,ENDLESS_LEVELS.length)-1].gap;
+  const L=endlessLevel(),ph=endlessPhase(L);
+  if(L!==P.level){if(P.level)wkToast(`⬆ Level ${L}: ${endlessName(L)}`,'ok');P.level=L;endlessTitle();}
+  P.m.gap=endlessGap(L);
   if(P.spawnI<P.m.enc.length)return;
-  const pool=ENDLESS_LEVELS.slice(0,L).flatMap(l=>l.pool);P.m.enc.push(pool[Math.floor(Math.random()*pool.length)]);
+  if(ph!==(P.phase||'day')){if(P.encs.some(e=>!e.done))return;endlessSetPhase(ph);} // change the conditions only between encounters
+  const night=ph==='night',pool=ENDLESS_LEVELS.slice(0,L).flatMap(l=>l.pool)
+    .filter(k=>!(night&&[].concat(k).some(x=>x.startsWith('overtaken')))); // at night she'd be behind you, out of the bridge view
+  P.m.enc.push(pool[Math.floor(Math.random()*pool.length)]);
 }
 // Hearts: a collision or a close call costs one (referee and showResult). Five clean encounters in a row win one back (up to 3).
 function endlessAfter(e){
@@ -59,5 +80,5 @@ function endlessEnd(){
   const prev=bestOf('m7');let lvl=0;
   try{lvl=+localStorage.getItem('wkBestLevel')||0;if(P.score>prev)localStorage.setItem('wkBest_m7',P.score);if(P.level>lvl)localStorage.setItem('wkBestLevel',P.level);}catch(e){}
   $('dbHead').textContent=P.hull>0?'⚓ Watch ended':'⚓ Watch over: out of hearts';
-  $('dbSub').textContent=`Level ${P.level} · ${P.spawnI} ship${P.spawnI===1?'':'s'} · ${gclock(P.time)} at sea${P.score>prev&&P.score>0?' · new best!':''}`;
+  $('dbSub').textContent=`Level ${P.level}${P.level>5?` (${endlessName(P.level).toLowerCase()})`:''} · ${P.spawnI} ship${P.spawnI===1?'':'s'} · ${gclock(P.time)} at sea${P.score>prev&&P.score>0?' · new best!':''}`;
 }
