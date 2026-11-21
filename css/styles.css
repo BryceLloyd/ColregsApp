@@ -250,3 +250,11 @@ code{font-size:12px;background:#0b1626;padding:1px 4px;border-radius:4px}
 .rmHead .rmSum{flex:1}.rmTog{flex:none;font-size:12px;color:var(--mut);font-weight:700}
 .rmStrip{display:flex;flex-wrap:wrap;gap:3px}.rmStrip i{width:12px;height:12px;border-radius:3px;border:1px solid var(--line)}
 .rmStrip i.l0{background:rgba(255,255,255,.05)}.rmStrip i.l1{background:#5a1f26;border-color:#c0505c}.rmStrip i.l2{background:#5a4512;border-color:#d4a23a}.rmStrip i.l3{background:#11523c;border-color:#2fbf86}
+/* endless level-up banner */
+#pLevelUp{position:absolute;left:0;right:0;top:28%;display:flex;justify-content:center;pointer-events:none;z-index:4;opacity:0}
+#pLevelUp.on{animation:lvlUp 3.6s ease forwards}
+#pLevelUp .lu{display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(160deg,rgba(15,110,86,.95),rgba(8,59,82,.95));border:2px solid #ffd24a;border-radius:16px;padding:12px 22px;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:86%;text-align:center}
+#pLevelUp small{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#ffd24a}
+#pLevelUp b{font-size:30px;font-weight:900;color:#fff;line-height:1.1}
+#pLevelUp span{font-size:13px;color:#d8f5ea}
+@keyframes lvlUp{0%{opacity:0;transform:scale(.6)}10%{opacity:1;transform:scale(1.08)}16%{transform:scale(1)}82%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}

@@ -44,6 +44,11 @@ function endlessGap(L){const ph=endlessPhase(L);if(L<=ENDLESS_LEVELS.length)retu
   const g=Math.max(0.8,1.2-0.1*Math.floor((L-ENDLESS_LEVELS.length-1)/3));return ph==='fog'?Math.max(g,2):g;} // fog needs room to slow down
 const endlessName=L=>L<=ENDLESS_LEVELS.length?ENDLESS_LEVELS[L-1].name:`${PHASE_NAME[endlessPhase(L)]}, heavier traffic`;
 const endlessTitle=()=>{$('pTitle').textContent=`⚓ Level ${P.level}${PHASE_ICON[P.phase||'day']}`;};
+// Levelling up: a big banner across the chart for a few seconds, and a chime. Play carries on.
+function levelBanner(L){const el=$('pLevelUp'),ph=endlessPhase(L);
+  el.innerHTML=`<div class="lu"><small>Level up</small><b>Level ${L}${PHASE_ICON[ph]}</b><span>${esc(endlessName(L))}</span></div>`;
+  el.classList.remove('on');void el.offsetWidth;el.classList.add('on');chime();
+  clearTimeout(levelBanner.t);levelBanner.t=setTimeout(()=>el.classList.remove('on'),3600);}
 // Night or fog for a while: the chart becomes radar, and at night the bridge view shows her lights.
 function endlessSetPhase(ph){
   P.phase=ph;P.m.night=ph==='night';P.m.fog=ph==='fog';
@@ -61,7 +66,7 @@ function endlessExtend(){const w=P.m.wps;while(w.length<P.wpi+3)w.push(endlessWp
 // Keep one ship queued, drawn from every level unlocked so far.
 function endlessFeed(){
   const L=endlessLevel(),ph=endlessPhase(L);
-  if(L!==P.level){if(P.level)wkToast(`⬆ Level ${L}: ${endlessName(L)}`,'ok');P.level=L;endlessTitle();}
+  if(L!==P.level){if(P.level)levelBanner(L);P.level=L;endlessTitle();}
   P.m.gap=endlessGap(L);
   if(P.spawnI<P.m.enc.length)return;
   if(ph!==(P.phase||'day')){if(P.encs.some(e=>!e.done))return;endlessSetPhase(ph);} // change the conditions only between encounters

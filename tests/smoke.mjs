@@ -432,7 +432,7 @@ const esc2 = await page.evaluate(() => {
   window.sound = () => {}; wkStart(MISSIONS.find(m => m.endless)); const out = [];
   const at = L => { while (P.encs.filter(e => e.done && !e.silent).length < (L - 1) * 5) P.encs.push({ done: true, silent: false, notes: [] });
     P.spawnI = P.m.enc.length; endlessFeed(); const k = P.m.enc[P.m.enc.length - 1];
-    return { L: P.level, phase: P.phase || 'day', night: !!P.m.night, fog: !!P.m.fog, bridge: $('pBridge').style.display, fogBtn: $('pFogBtn').style.display !== 'none', gap: P.m.gap, title: $('pTitle').textContent, k: [].concat(k).join('+') }; };
+    return { L: P.level, phase: P.phase || 'day', night: !!P.m.night, fog: !!P.m.fog, bridge: $('pBridge').style.display, fogBtn: $('pFogBtn').style.display !== 'none', gap: P.m.gap, title: $('pTitle').textContent, banner: $('pLevelUp').classList.contains('on') ? $('pLevelUp').textContent : '', k: [].concat(k).join('+') }; };
   for (const L of [5, 6, 7, 8, 9, 10, 11, 15]) out.push(at(L));
   // at night, no "being overtaken" ships
   let ot = 0; P.encs.length = 0; for (let i = 0; i < 40; i++) P.encs.push({ done: true, silent: false, notes: [] }); endlessSetPhase('night');
@@ -441,8 +441,8 @@ const esc2 = await page.evaluate(() => {
 });
 const ph = esc2.out.map(o => o.phase).join(',');
 ok(ph === 'day,night,fog,day,night,fog,day,night' && esc2.out[1].bridge === 'block' && esc2.out[2].fog && esc2.out[2].fogBtn && esc2.out[2].bridge === 'none' && !esc2.out[3].fog &&
-   /Level 6 🌙/.test(esc2.out[1].title) && esc2.out[7].gap < esc2.out[3].gap && esc2.ot === 0,
-  `endless escalation: phases by level 5–11, 15: ${ph}; gaps ${esc2.out.map(o => o.gap).join('/')}; titles "${esc2.out[1].title}", "${esc2.out[2].title}"; overtaken at night: ${esc2.ot}`);
+   /Level 6 🌙/.test(esc2.out[1].title) && /Level up.*Level 6.*Night watch/.test(esc2.out[1].banner) && esc2.out[7].gap < esc2.out[3].gap && esc2.ot === 0,
+  `endless escalation: phases by level 5–11, 15: ${ph}; gaps ${esc2.out.map(o => o.gap).join('/')}; titles "${esc2.out[1].title}", "${esc2.out[2].title}"; banner "${esc2.out[1].banner}"; overtaken at night: ${esc2.ot}`);
 
 // 22. Records: one screen, three tabs. Endless watches are the main board (with your name); Challenge and mock exam are personal.
 const rec = await page.evaluate(() => {
@@ -462,6 +462,17 @@ const rec = await page.evaluate(() => {
 ok(/Your best watch/.test(rec.first) && /#2 of your watches/.test(rec.second) && rec.wkRows === 2 && rec.wkTop === '500' && rec.prac === 6 && rec.nick === 'Skipper' &&
    /best Challenge run/.test(rec.chNote) && rec.chRows === 1 && rec.mk === 1 && rec.tabs === 'Watchkeeper/Challenge/Mock exam' && rec.backup,
   `records: watches "${rec.first}" then "${rec.second}"; ${rec.wkRows} watches, ${rec.prac} practice missions; Challenge "${rec.chNote}"; mock attempts ${rec.mk}; backup includes them ${rec.backup}`);
+
+// 23. Challenge scenarios: every correct answer passes well clear (0.8+), as written and in random variants.
+const clear = await page.evaluate(() => {
+  const run = (item, k) => { queue = [item]; qi = 0; mode = 'practice'; replayChoice = null; load(); while (t < freezeTime()) step(0.02); choice = k; applyAction(k); while (t < decT + 6.5 && !collided) step(0.02); return other.type === 'buoy' ? 9 : minD; };
+  show('app'); const bad = []; let n = 0;
+  for (let i = 0; i < SCEN.length; i++) for (const k of SCEN[i].correct) { n++; const md = run(i, k); if (md < 0.8) bad.push(`${i}:${k} ${md.toFixed(2)}`); }
+  for (let rep = 0; rep < 6; rep++) for (let i = 0; i < SCEN.length; i++) { const v = makeVariant(i, 1 + rep); if (typeof v !== 'object') continue;
+    for (const k of v.sc.correct) { n++; const md = run(v, k); if (md < 0.8) bad.push(`${i}:${k} [${v.sc.vtags}] ${md.toFixed(2)}`); } }
+  show('home'); return { n, bad };
+});
+ok(!clear.bad.length, `challenge scenarios: ${clear.n} correct answers (as written and varied) all pass 0.8+ clear ${clear.bad.join(' | ')}`);
 
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
