@@ -20,7 +20,7 @@
 
 <!-- HOME -->
 <div class="view" id="home">
-  <div class="hhead"><span class="a">⚓</span><b>COLREGs Trainer</b><button class="helpBtn" id="goPlay">How to play ⚙️</button></div>
+  <div class="hhead"><span class="a">⚓</span><b>COLREGs Trainer</b><button class="ib" id="goRecords" aria-label="Records">🏆</button><button class="helpBtn" id="goPlay" aria-label="How to play and settings"><span class="hl">How to play </span>⚙️</button></div>
   <div class="scroll stack" id="homeScroll">
     <div class="wkHero">
       <div class="t">🧭 Watchkeeper</div>
@@ -163,7 +163,7 @@
   <div class="ovHead"><h2>🏆 Challenge</h2><button class="ib" data-close>✕</button></div>
   <div class="scroll stack">
     <div class="note">Random situations at sea across <b>7 levels</b>, each harder than the last: basics → who gives way → buoyage → signal flags → night lights → special vessels &amp; channels → fog &amp; tough calls. Each level mixes animated scenarios with multiple-choice questions. You have <b>3 lives</b>. Most correct answers wins; fastest time breaks ties.</div>
-    <label class="small" for="nick">Your name on the leaderboard</label>
+    <label class="small" for="nick">Your name</label>
     <input id="nick" maxlength="20" placeholder="e.g. Bryce" autocomplete="off">
     <button class="btn" id="startBtn">Start ⚓</button>
     <button class="btn sec" id="homeLb">🏆 Your best runs</button>
@@ -189,11 +189,11 @@
     <div class="big center" id="endScore"></div>
     <div class="center small" id="endSub"></div>
     <div class="center" id="endMsg"></div>
-    <div class="note" id="saveNote">Posting your score…</div>
+    <div class="note" id="saveNote"></div>
     <button class="btn" id="shareBtn">📣 Challenge a friend</button>
     <textarea id="copyBox" readonly></textarea>
     <div class="small" id="missed"></div>
-    <h3 style="margin:6px 0 0;font-size:15px">🏆 Leaderboard</h3>
+    <h3 style="margin:6px 0 0;font-size:15px">🏆 Your best runs</h3>
     <div id="endBoard"></div>
     <div class="row"><button class="btn" id="again">Play again</button><button class="btn sec" id="endHome">🏠 Home</button></div>
   </div>
@@ -208,12 +208,10 @@
 </div></div>
 
 <!-- Leaderboard -->
-<div class="ov" id="ovLb"><div class="ovIn">
-  <div class="ovHead"><h2>🏆 Challenge: best runs</h2><button class="ib" data-close>✕</button></div>
-  <div class="scroll">
-    <div id="lbBoard"></div>
-
-  </div>
+<div class="ov" id="ovRecords"><div class="ovIn">
+  <div class="ovHead"><h2>🏆 Records</h2><button class="ib" data-close>✕</button></div>
+  <div class="tabs" id="recTabs"><button class="tab" data-t="wk">Watchkeeper</button><button class="tab" data-t="ch">Challenge</button><button class="tab" data-t="mk">Mock exam</button></div>
+  <div class="scroll stack" id="recBody"></div>
 </div></div>
 
 <template id="rulesTpl">
@@ -309,6 +307,7 @@
 <script src="js/22-watchkeeper-home.js"></script>
 <script src="js/23-study.js"></script>
 <script src="js/24-review.js"></script>
+<script src="js/25-records.js"></script>
 <script src="js/99-boot.js"></script>
 </body>
 </html>

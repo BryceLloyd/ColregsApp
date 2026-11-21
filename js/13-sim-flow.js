@@ -88,7 +88,7 @@ function finish(cleared){
 $('startBtn').onclick=startChallenge;
 $('again').onclick=()=>{closeOv('ovEnd');openOv('ovStart');};
 $('endHome').onclick=()=>{closeOv('ovEnd');show('home');};
-$('homeLb').onclick=()=>openOv('ovLb');
+$('homeLb').onclick=()=>{closeOv('ovStart');openRecords('ch');};
 
 $('shareBtn').onclick=async()=>{
   const msg=`⚓ I got ${score} right and reached level ${level} of ${LEVELS.length} in ${fmt(gameTime)} on the COLREGs Trainer. Think you know the rules of the road better? ${LINK}`;

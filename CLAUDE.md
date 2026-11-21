@@ -51,6 +51,7 @@ A static, mobile-first PWA for learning the COLREGs. There is no framework and n
 - Study record (`23-study.js`): every answer is logged by rule in `localStorage colregsStudy` (`study.r[rule] = {n, ok, h: last 10 as '1'/'0'}`). Quiz and Challenge questions log through `mountQ` (`qKeys`: rules cited in the explanation, else worked out from the topic; buoyage → `IALA`, flags → `Flags`), scenarios in `decide()` (`sc.rule`), Watchkeeper notes in `showResult` (`studyEnc`, the rules each note cites; collisions and close calls count against Rule 8). Cite rule numbers in new notes and explanations so they're logged.
   - The home page rule map (`renderRuleMap`, `RULE_INFO` short paraphrased summaries, `RULE_GROUPS`, `RULE_MISSION`) colours each rule by its last 10 results and lists up to 3 weak rules; tapping one opens `#ovRule` with the summary, your record, and where to practise.
   - Mistakes deck and mock exam (`24-review.js`): any rule you get wrong goes into `study.d[rule] = {b: box, due}` (due now). `startReview` asks one question per due rule (up to 10) from `reviewPool()` (every quiz-format question, tagged with `qKeys`); right moves it up a box (1, 3, 7, 21 days, then out), wrong brings it back in 10 min. `startMock`: 30 questions (`MOCK_MIX`), no feedback until the end (`mountQ` `silent`), pass mark 80%, breakdown by part, what you missed; best in `colregsMockBest`. Both run in the `#sec` view through `qRun`. Every rule on the map must have at least one quiz question (a smoke test checks).
+  - Records (`25-records.js`, `#ovRecords`, 🏆 in the home header or tap the best-watch line): three tabs. **Watchkeeper is the main board**: your top endless watches with your name (`wkBestRuns`, top 50, `recordWatch` from `endlessEnd`, which also shows "#2 of your watches" in the debrief) and each practice mission's stars and best. **Challenge** (`14-leaderboard.js`, `colregsLocalBoard`) and **Mock exam** (`colregsMockRuns`, last 20) are personal. One name for everything (`colregsNick`). The future shared leaderboard (5c) is for endless Watchkeeper only.
   - First launch shows `#ovWelcome` (skipped if there's already progress; `colregsSeen`). On iPhone in Safari, home shows an install hint (`colregsInstallOff` hides it). `navigator.storage.persist()` is requested at load. ⚙️ How to play has a backup code (`CT1.` + base64 JSON of every `wkBest*`/`colregs*` key) to move progress between browsers or into the installed app, which has its own storage.
 
 ## Content rules
@@ -70,7 +71,7 @@ The smoke tests seed `Math.random`, so every run plays the same traffic and resu
 Run `npm run check && npm test` before committing, and check its exit status (don't pipe it through grep). If you change scenario geometry, the test "correct answers pass clear" must still pass.
 
 ## Deploy
-GitHub Pages from the `Website-Dev` branch (root): https://brycelloyd.github.io/ColregsApp/. Storage is browser-only for now (`localStorage`); leave `js/config.js` blank. **Bump `CACHE` in `sw.js` on every deploy.** If you change Challenge scoring or levels, bump `LB_VERSION` in `14-leaderboard.js` so old scores drop off the board.
+GitHub Pages from the `Website-Dev` branch (root): https://brycelloyd.github.io/ColregsApp/. Storage is browser-only for now (`localStorage`); leave `js/config.js` blank. **Bump `CACHE` in `sw.js` on every deploy.** If you change Challenge scoring or levels, bump `LB_VERSION` in `14-leaderboard.js` so old runs drop off your personal list.
 
 ## Roadmap
 Watchkeeper stages, in order:
@@ -92,7 +93,8 @@ Watchkeeper stages, in order:
    - 5b ✅ Study record (every verdict and answer logged by rule), rule map on the home page, first-launch welcome, iOS install hint, backup code.
    - 5b+ ✅ Mistakes deck with spaced repetition; exam topics for Rules 2, 3, 16, 22, 24, 28, 30, 31, 36, 37; mock exam.
    - 5b++ ✅ Endless that keeps getting harder past level 5 (night and fog legs, denser traffic).
-   - 5c Shared Watchkeeper leaderboard (Supabase), when wanted.
+   - 5b+++ ✅ One Records screen: Watchkeeper (main board), Challenge and mock exam (personal).
+   - 5c Shared leaderboard for endless Watchkeeper only (Supabase), when wanted.
 
 Known issues and ideas:
 - If the codebase keeps growing, consider moving to ES modules (Vite) and TypeScript. Do this as a separate, approved step.

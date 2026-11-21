@@ -3,7 +3,7 @@
 let view='home';
 function show(v){view=v;if(v==='home'&&typeof renderHome==='function')renderHome();['home','sec','app','play'].forEach(id=>$(id).style.display=id===v?'flex':'none');if(v==='app')resize();if(v==='play')wkResize();}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.ov').classList.remove('on'));
-function openOv(id){$(id).classList.add('on');if(id==='ovLb'||id==='ovEnd')renderBoard();}
+function openOv(id){$(id).classList.add('on');if(id==='ovEnd')renderBoard();}
 function closeOv(id){$(id).classList.remove('on')}
 
 // ---------- sections ----------

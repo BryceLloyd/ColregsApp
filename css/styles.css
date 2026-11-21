@@ -236,3 +236,13 @@ code{font-size:12px;background:#0b1626;padding:1px 4px;border-radius:4px}
 .mkPart{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0}.mkPart b{display:inline;margin:0}.mkPart .g{color:var(--ok)}.mkPart .r{color:var(--bad)}
 .mkMiss{display:flex;flex-direction:column;gap:3px;margin-top:6px}.mkMiss .g{color:#bfeccd;font-weight:700}
 .mkVis{max-width:160px}.mkVis .w{width:100%!important}
+/* records */
+#recTabs{margin-bottom:8px}#recTabs .tab{font-size:13px;padding:8px 4px}
+#recNick{width:100%;box-sizing:border-box}
+.recRow{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 2px;border-bottom:1px solid var(--line)}.recRow>span:first-child{flex:1;min-width:0}
+.recRow b{min-width:44px;text-align:right}.recRow .bar{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.recRow .bar i{display:block;height:100%}.recRow .bar i.g{background:var(--ok)}.recRow .bar i.r{background:var(--bad)}
+.recBest{text-align:center}.recBest .g{color:var(--ok);font-weight:700}.recBest .r{color:var(--bad);font-weight:700}
+#wkBest{cursor:pointer}
+.lb td.tm{white-space:nowrap}
+@media (max-width:374px){.helpBtn .hl{display:none}.helpBtn{min-width:40px;padding:0 10px}}

@@ -59,6 +59,7 @@ function startMock(){
   const qs=MOCK_MIX.flatMap(([k,n])=>makeQs(k,n)).filter(Boolean);
   qRun({title:'📝 Mock exam',qs:shuffle(qs),exam:true,done:(body,score,res,ms)=>{
     const n=res.length,pct=n?score/n:0,pass=pct>=MOCK_PASS,best=mockBest();
+    recordMock({score,n,ms,d:Date.now()});
     if(!best||score>best.score||(score===best.score&&ms<best.ms))try{localStorage.setItem('colregsMockBest',JSON.stringify({score,n,ms}));}catch(e){}
     const parts=MOCK_PARTS.map(([name,f])=>{const r=res.filter(x=>(x.q.keys||qKeys(x.q)).some(f));return{name,n:r.length,ok:r.filter(x=>x.ok).length};}).filter(p=>p.n);
     const ans=q=>q.order?q.items.join(' → '):q.img?'':(q.opts||[]).filter(o=>o.ok).map(o=>o.h.replace(/<[^>]*>/g,'')).join('');

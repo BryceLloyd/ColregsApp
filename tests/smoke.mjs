@@ -443,6 +443,25 @@ ok(ph === 'day,night,fog,day,night,fog,day,night' && esc2.out[1].bridge === 'blo
    /Level 6 🌙/.test(esc2.out[1].title) && esc2.out[7].gap < esc2.out[3].gap && esc2.ot === 0,
   `endless escalation: phases by level 5–11, 15: ${ph}; gaps ${esc2.out.map(o => o.gap).join('/')}; titles "${esc2.out[1].title}", "${esc2.out[2].title}"; overtaken at night: ${esc2.ot}`);
 
+// 22. Records: one screen, three tabs. Endless watches are the main board (with your name); Challenge and mock exam are personal.
+const rec = await page.evaluate(() => {
+  const out = {}; for (const k of ['wkBestRuns', 'colregsLocalBoard', 'colregsMockRuns']) localStorage.removeItem(k);
+  const watch = (sc, lv) => { wkStart(MISSIONS.find(m => m.endless)); P.score = sc; P.level = lv; P.spawnI = 3; wkEnd(false); const t = $('dbSub').textContent; closeOv('ovDebrief'); return t; };
+  out.first = watch(500, 4); out.second = watch(200, 2); P = null; show('home');
+  openRecords('wk'); out.wkRows = document.querySelectorAll('#recBody .lb tr').length; out.wkTop = document.querySelector('#recBody .lb .sc').textContent;
+  out.prac = document.querySelectorAll('#recBody .recRow').length;
+  const n = $('recNick'); n.value = 'Skipper'; n.onchange(); out.nick = localStorage.getItem('colregsNick');
+  score = 12; level = 3; gameTime = 100; saveScore(); out.chNote = $('saveNote').textContent;
+  openRecords('ch'); out.chRows = document.querySelectorAll('#recBody .lb tr').length;
+  recordMock({ score: 25, n: 30, ms: 60000, d: Date.now() }); openRecords('mk'); out.mk = document.querySelectorAll('#recBody .recRow').length;
+  out.tabs = [...document.querySelectorAll('#recTabs .tab')].map(b => b.textContent).join('/');
+  out.backup = /wkBestRuns/.test(atob(backupCode().slice(4))) && /colregsMockRuns/.test(atob(backupCode().slice(4)));
+  closeOv('ovRecords'); return out;
+});
+ok(/Your best watch/.test(rec.first) && /#2 of your watches/.test(rec.second) && rec.wkRows === 2 && rec.wkTop === '500' && rec.prac === 6 && rec.nick === 'Skipper' &&
+   /best Challenge run/.test(rec.chNote) && rec.chRows === 1 && rec.mk === 1 && rec.tabs === 'Watchkeeper/Challenge/Mock exam' && rec.backup,
+  `records: watches "${rec.first}" then "${rec.second}"; ${rec.wkRows} watches, ${rec.prac} practice missions; Challenge "${rec.chNote}"; mock attempts ${rec.mk}; backup includes them ${rec.backup}`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
