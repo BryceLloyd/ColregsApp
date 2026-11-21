@@ -22,7 +22,10 @@ function popLabel(txt){
 }
 function popText(txt,good){if(!P)return;const now=performance.now(),last=P.pops.length?P.pops[P.pops.length-1].at:0;
   P.pops.push({txt,good,at:Math.max(now,last+700)});} // stagger so they don't stack on top of each other
-function popPoints(e){for(const n of e.notes)if(n.p)popText(`${n.p>0?'+':'−'}${Math.abs(n.p)} ${popLabel(n.txt)}`,n.p>0);}
+// Horn notes (Rules 34 & 35) just say ✓ Horn or ✗ Horn.
+const isHorn=lbl=>/\b3[45]\b|\b3[45]\(/.test(lbl);
+const ptsTxt=p=>`${p>0?'+':'−'}${Math.abs(p)}`;
+function popPoints(e){for(const n of e.notes)if(n.p){const l=popLabel(n.txt);popText(isHorn(l)?`${n.p>0?'✓':'✗'} Horn ${ptsTxt(n.p)}`:`${ptsTxt(n.p)} ${l}`,n.p>0);}}
 function popsDraw(c,x,y){
   const now=performance.now();P.pops=P.pops.filter(p=>now-p.at<2400);
   c.textAlign='center';c.font='bold 14px sans-serif';c.lineJoin='round';
@@ -33,7 +36,10 @@ function popsDraw(c,x,y){
 }
 
 // ---- after each encounter: points float up, the verdict goes in the hint bar ----
+// Hearts are for safety: a collision (in the referee) or a close call costs one. Mistakes cost points only.
 function showResult(e){
+  if(!e.collided&&e.notes.some(n=>n.txt.startsWith('Close quarters'))){P.hull--;e.closeCall=true;
+    e.notes.push({ok:false,txt:'Close call: that cost a heart',p:0});popText('💔 Close call',false);}
   popPoints(e);P.lastRes={e,t:P.time};if(P.m.endless)endlessAfter(e);
   if(e.notes.some(n=>n.ok===false)&&pauseOnMistakes()){P.paused=true;P.mistakePause=true;$('pPause').textContent='▶';}
   const h=$('pHint');if(h)h.dataset.k='';

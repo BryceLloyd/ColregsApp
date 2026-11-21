@@ -47,11 +47,10 @@ function endlessFeed(){
   if(P.spawnI<P.m.enc.length)return;
   const pool=ENDLESS_LEVELS.slice(0,L).flatMap(l=>l.pool);P.m.enc.push(pool[Math.floor(Math.random()*pool.length)]);
 }
-// Hearts: a collision costs one (in the referee); so does any other encounter that scores below zero.
-// Five clean encounters in a row win one back (up to 3).
+// Hearts: a collision or a close call costs one (referee and showResult). Five clean encounters in a row win one back (up to 3).
 function endlessAfter(e){
   const clean=!e.notes.some(n=>n.ok===false);
-  if(e.pts<0&&!e.collided){P.hull--;P.streak=0;popText('💔 −1 heart',false);}
+  if(e.collided||e.closeCall)P.streak=0;
   else if(clean){P.streak=(P.streak||0)+1;if(P.streak>=5){P.streak=0;if(P.hull<3){P.hull++;popText('❤️ +1 heart',true);}}}
   else P.streak=0;
 }

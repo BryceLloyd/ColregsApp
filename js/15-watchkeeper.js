@@ -15,7 +15,7 @@ const MISSIONS=[
   wps:[[0.6,5],[3.6,8.6],[3.0,13.2],[6.4,16.4]],enc:['headon','xstbd','xport','overtaken','headon:r18','xstbd:r18','overtaking'],par:650,ready:true},
  {id:'m6',name:'Rogue ships',desc:'Some ships ignore the rules. Stand on, sound five short when in doubt, and act when you must (Rules 17 & 34(d)).',wps:[[0.5,5],[-2.5,9],[0,13.5],[-1.5,18],[1.5,21.5]],
   enc:['xport','xport!','xstbd','overtaken?','xport?','headon','overtaken!','xport?'],par:530,ready:true},
- {id:'m7',name:'Endless',desc:'Keep the watch as the traffic builds. Lose a heart for each collision or bad call; five clean encounters win one back.',endless:true,ready:true,wps:[[0.6,5]],enc:[]}];
+ {id:'m7',name:'Endless',desc:'Keep the watch as the traffic builds. Lose a heart for each collision or close call; five clean encounters win one back.',endless:true,ready:true,wps:[[0.6,5]],enc:[]}];
 const COLLIDE=0.1; // nm between centres: the ship icons overlap by about half
 const HORN_WIN=8; // a manoeuvring signal counts if it's sounded within this many real seconds of the manoeuvre (Rule 34(a))
 const ROGUE_AFTER=3; // real seconds after a compliant ship would have acted: by then it's clear she isn't (Rule 17(a)(ii))
@@ -65,7 +65,7 @@ function wkView(){const r=Math.min(P.range,3);if(!PW||!PH)return{ahead:3.3*r/3,b
   const k=(PH*0.6)/r;return{ahead:PH*0.66/k,behind:PH*0.34/k,side:PW/2/k};}
 function inView(p,m=0.1){const o=P.own,V=wkView(),dx=p.x-o.x,dy=p.y-o.y,s=Math.sin(o.h*D2R),c=Math.cos(o.h*D2R),f=dx*s+dy*c,l=dx*c-dy*s;
   return f>-V.behind-m&&f<V.ahead+m&&Math.abs(l)<V.side+m;}
-function spawnAI(kind,T=20){
+function spawnAI(kind,T=20,commit=true){
   if(kind.startsWith('chan:'))return chanSpawn(kind);
   let rogue=false;if(kind.endsWith('!')){rogue=true;kind=kind.slice(0,-1);}else if(kind.endsWith('?')){rogue=Math.random()<0.5;kind=kind.slice(0,-1);}
   let [geo,ty]=kind.split(':');ty=ty==='r18'?R18_POOL[Math.floor(Math.random()*R18_POOL.length)]:ty||'power';kind=geo;
@@ -80,9 +80,12 @@ function spawnAI(kind,T=20){
     if(WK_TYPES[ty].v)v=WK_TYPES[ty].v;
     // both ships reach the same point M at the same time T; push T back until she starts off the chart
     const ve=vel(h,v*KN);for(let TT=T;TT<=60;TT+=2){T=TT;const M={x:o.x+Math.sin(o.h*D2R)*sp*T,y:o.y+Math.cos(o.h*D2R)*sp*T};x=M.x-ve.x*T;y=M.y-ve.y*T;if(!inView({x,y},0.25))break;}}
-  P.nid++;const a={id:P.nid,name:'Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14],type:ty,x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[],rogue};P.ais.push(a);
-  newEnc(a);
+  const a={type:ty,x,y,h,th:h,h0:h,v,tv:v,trail:[],state:'cruise',bh:[],rogue};
+  return commit?addAI(a):a;
 }
+function addAI(a){P.nid++;a.id=P.nid;a.name='Ship '+'ABCDEFGHJKLMNP'[(P.nid-1)%14];P.ais.push(a);newEnc(a);return a;}
+// Would a new ship start on top of, or soon run into, a ship already out there? Then wait and try again.
+const aiClash=a=>P.ais.some(b=>{if(b.dead||b.state?.startsWith('chan'))return false;const c=cpaOf(a,b);return dist(a,b)<0.6||(c.tcpa>0&&c.cpa<0.2&&c.tcpa<25);});
 function newEnc(a){
   const o=P.own,c=cpaOf(o,a);
   P.encs.push({id:a.id,name:a.name,vt:wkType(a),cl:classify(o,a),h0:o.th,v0:o.tv,act:null,dir:0,dirT:0,asp:norm(brg(a,o)-a.h),crossed:false,standBreak:false,minR:c.range,notes:[],pts:0,collided:false,announced:false,backT:null,droppedBack:false,t0:P.time,asternT:null,rogue:!!a.rogue,dueT:null,cpaT:null});
@@ -93,14 +96,54 @@ function aiTick(a,dt){
   if(a.state?.startsWith('chan'))return chanAiTick(a,dt);
   if(P.m.fog&&a.state==='cruise'){const c=cpaOf(a,P.own);if(c.cpa<0.5&&c.tcpa>0&&c.range<2.2){ // in fog every ship acts: starboard for a ship forward of her beam
     if(Math.abs(norm(brg(a,P.own)-a.h))<90){a.th=norm(a.h0+35);a.state='avoid';}else a.state='stand';}}
+  aiAvoidAis(a);
   const c=cpaOf(a,P.own),cl=classify(a,P.own),risk=c.cpa<0.35&&c.tcpa>0&&c.range<3.5;
   if(a.state==='cruise'&&risk&&c.range<2.2&&!a.rogue){
     if(cl.role==='give'){if(cl.type==='overtaking'){const rb=norm(brg(a,P.own)-a.h);a.th=norm(a.h0+(rb>0?-25:25));}else a.th=norm(a.h0+(cl.type==='headon'?30:45));a.state='avoid';}
     else a.state='stand';}
   if(a.state==='stand'&&c.cpa<0.08&&c.range<0.35&&c.tcpa>0&&a.type!=='nuc'&&a.type!=='ram'){a.th=norm(a.h0+60);a.state='avoid';}
   if(a.state==='avoid'&&c.tcpa<0&&c.range>0.8){const back=cpaOf({x:a.x,y:a.y,h:a.h0,v:a.v},P.own);if(!(back.tcpa>0&&back.cpa<0.6)){a.th=a.h0;a.state='resume';}} // resume her course only once it won't cut back across you
+  aiLastResort(a,dt);
   turnTo(a,10,dt);const ve=pvel(a);a.x+=ve.x*dt;a.y+=ve.y*dt;
   a.bh.push({t:P.time,b:brg(P.own,a)});while(a.bh.length&&P.time-a.bh[0].t>2.5)a.bh.shift();
+}
+// Other ships keep clear of each other by the same rules: the give-way ship turns (starboard, or away when
+// overtaking); a stand-on ship acts herself if the other can't or won't (a rogue, or not under command). Rogue ships
+// hold on regardless. Once they're past and opening, she resumes her course.
+function aiAvoidAis(a){
+  if(a.rogue||a.v<0.3||a.type==='nuc'||a.type==='ram')return; // restricted vessels can't keep out of the way
+  const busy=a.state==='avoidAi';if(!busy&&!['cruise','resume','stand','avoid'].includes(a.state))return;
+  let th=null,tc=1e9; // the most urgent ship she should act for
+  for(const b of P.ais){if(b===a||b.dead||b.state?.startsWith('chan'))continue;
+    const c=cpaOf(a,b);if(!(c.tcpa>0&&c.cpa<0.3&&c.range<2.5))continue;
+    const cl=classify(a,b),stuck=b.rogue||b.v<0.3||['nuc','ram'].includes(b.type)||(b.state==='avoidAi'&&b.avoidId!==a.id);
+    const yielding=b.state==='avoidAi'&&b.avoidId===a.id;
+    if(cl.role!=='give'&&!(stuck&&c.range<2)&&!(c.range<0.6&&c.cpa<0.1&&!yielding))continue; // stand-on acts if the other can't, or at the last moment
+    if(c.tcpa<tc){tc=c.tcpa;th={b,cl};}}
+  const cur=busy&&P.ais.find(x=>x.id===a.avoidId),cc=cur&&!cur.dead&&cpaOf(a,cur);
+  if(th&&(!busy||(th.b!==cur&&(!cc||cc.tcpa<0||tc<cc.tcpa)))){ // act, or switch to a more urgent ship
+    const rb=norm(brg(a,th.b)-a.h);if(!busy){a.prevState=a.state;a.prevTh=a.th;}a.state='avoidAi';a.avoidId=th.b.id;
+    a.avoidDir=th.cl.type==='overtaking'?(rb>0?-1:1):rb>100?-1:1;
+    const want=norm(a.h+a.avoidDir*(th.cl.role==='give'?45:60));if(Math.abs(norm(want-a.prevTh))<=120)a.th=want;return;}
+  if(!busy)return;
+  if(!cc||(cc.tcpa<0&&cc.range>0.5)){a.th=a.prevTh;a.state=a.prevState;return;}
+  if(cc.tcpa>0&&cc.cpa<0.15&&Math.abs(norm(a.th-a.h))<5&&Math.abs(norm(a.th-a.prevTh))<110)a.th=norm(a.th+a.avoidDir*30); // not enough yet: more
+}
+// Last resort between other ships (every ship, rogues and restricted vessels too): about to pass too close to
+// another, she takes the smallest turn (starboard first) that clears every nearby ship, or stops if none does.
+// Once clear she goes back to the course she was steering.
+const LR_TURNS=[20,40,60,90,-20,-40,-60,-90,130];
+function aiLastResort(a,dt){
+  a.v0??=a.v;
+  const thr=P.ais.filter(b=>{if(b===a||b.dead||b.state?.startsWith('chan'))return false;
+    const c=cpaOf(a,b),va=pvel(a),vb=pvel(b),rel=Math.hypot(va.x-vb.x,va.y-vb.y);
+    return c.tcpa>0&&c.cpa<0.18&&c.range<Math.max(0.6,rel*15);}); // about 15 real seconds out
+  if(!thr.length){if(a.lrTh!=null){a.th=a.lrTh;a.lrTh=null;}a.v+=Math.max(-4*dt,Math.min(dt,a.v0-a.v));return;}
+  if(a.lrTh==null)a.lrTh=a.th;
+  const clear=h=>thr.every(b=>{const c=cpaOf({x:a.x,y:a.y,h,v:Math.max(a.v,a.v0*0.5)},b);return c.tcpa<=0||c.cpa>=0.25;});
+  const d=a.v0<4?null:LR_TURNS.find(d=>clear(norm(a.h+d))); // a slow ship is the obstacle: she holds on, the others go round
+  if(d!=null){a.th=norm(a.h+d);a.v+=Math.max(-4*dt,Math.min(dt,a.v0-a.v));}
+  else if(a.v0>=4)a.v=Math.max(0,a.v-4*dt);
 }
 function encAlert(e){if(e.cl.type==='fog')return `⚠ Radar: ${e.name}, close-quarters situation developing. Your move.`;if(e.cl.type==='chan')return `⚠ ${e.name} is coming down the channel towards you.`;
   if(e.cl.type==='chancross')return `⚠ ${e.name} is at the edge of the channel ahead.`;if(e.cl.type==='chanover')return `⚠ You're coming up behind ${e.name} in the channel.`;return `⚠ Risk of collision with ${e.name}: bearing steady, range closing. Your move.`;}
@@ -241,7 +284,10 @@ function wkTick(dt){
     return c.range<1.6||(c.tcpa>0&&c.range<3);}),last=m.wps[m.wps.length-1];
   const wpN=m.wps[Math.min(P.wpi,m.wps.length-1)],steady=Math.abs(norm(o.th-o.h))<3&&(m.endless||Math.abs(norm(brg(o,{x:wpN[0],y:wpN[1]})-o.th))<12&&Math.hypot(wpN[0]-o.x,wpN[1]-o.y)>2.0); // endless: traffic finds you wherever you steer
   if(m.endless)endlessFeed();
-  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&Math.abs(o.tv-o.v)<1&&P.time-P.lastSpawn>(m.gap??3)&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const g=m.enc[P.spawnI++];[].concat(g).forEach((k,i)=>spawnAI(k,GROUP_T[i]));P.lastSpawn=P.time;}
+  if(P.spawnI<m.enc.length&&!active&&!near&&steady&&Math.abs(o.tv-o.v)<1&&P.time-P.lastSpawn>(m.gap??3)&&Math.hypot(last[0]-o.x,last[1]-o.y)>2.2){const ks=[].concat(m.enc[P.spawnI]);
+    if(ks.some(k=>k.startsWith('chan:'))){P.spawnI++;ks.forEach(k=>spawnAI(k));P.lastSpawn=P.time;}
+    else{const cs=ks.map((k,i)=>spawnAI(k,GROUP_T[i],false));
+      if(!cs.some(aiClash)){P.spawnI++;cs.forEach(addAI);P.lastSpawn=P.time;}else P.lastSpawn=P.time-(m.gap??3)+0.5;}} // try again shortly
   // waypoints
   const wp=m.wps[P.wpi];
   if(P.chan?chanPos(P.m.chan,o).s>=P.chan.wpS[P.wpi]:wpPassed(m,o)){P.score+=50;P.wpi++;if(m.endless)endlessExtend();
@@ -254,7 +300,7 @@ function wkEnd(ok){
   const chanHTML=chanEndGrade()+fogEndGrade()+(P.lateHits.length?`<div class="enc"><h4><span>❌ Collisions after an encounter</span><span style="color:var(--bad)">−${100*P.lateHits.length}</span></h4><ul>${P.lateHits.map(n=>`<li style="color:#ffb3b3">✗ Hit ${esc(n)} after you'd already passed her (−100, −1 heart)<div class="fix">➜ Keep watching ships you've passed, especially slow ones, before you turn back to your course.</div></li>`).join('')}</ul></div>`:'');
   let bonus=0;if(ok){bonus=(P.m.fog?0:Math.max(0,Math.round((P.m.par-P.time)*2)))+P.hull*50;P.score+=bonus;} // no time bonus in fog: safe speed comes first
   try{const k=bestKey(P.m),b=+localStorage.getItem(k)||0;if(ok&&P.score>b)localStorage.setItem(k,P.score);}catch(e){}
-  $('dbHead').textContent=ok?'⚓ Mission complete':'💥 Mission failed — out of hull';
+  $('dbHead').textContent=ok?'⚓ Mission complete':'💥 Mission failed: out of hearts';
   $('dbScore').textContent=`${P.score} pts`;
   $('dbSub').textContent=`${P.m.name} · ${gclock(P.time)} at sea · hull ${'❤️'.repeat(Math.max(0,P.hull))}${ok?` · bonus +${bonus}`:''}`;
   if(P.m.endless)endlessEnd(); // endless: its own heading, subtitle and best score
