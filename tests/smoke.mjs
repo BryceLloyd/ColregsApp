@@ -474,6 +474,23 @@ const clear = await page.evaluate(() => {
 });
 ok(!clear.bad.length, `challenge scenarios: ${clear.n} correct answers (as written and varied) all pass 0.8+ clear ${clear.bad.join(' | ')}`);
 
+// 24. Once a ship is passing clear (or past CPA), turning for your next waypoint isn't judged against her.
+const clr = await page.evaluate(() => {
+  window.sound = () => {}; const out = {};
+  const run = (setup, drive) => { MISSIONS[0].enc = []; wkStart(MISSIONS[0]); P.lastSpawn = 1e9; const a = setup(); const e = P.encs[P.encs.length - 1];
+    for (let i = 0; i < 9000 && !e.done; i++) { drive(e, a); wkTick(0.05); } return e; };
+  // stand-on: she gives way; once she's clear, you turn 40° away from her (starboard) for a waypoint
+  let e = run(() => { spawnAI('xport'); return P.ais[0]; }, (e) => { if (e.clearT && !e.turned) { e.turned = 1; P.own.th = norm(e.h0 + 40); } });
+  out.stand = { clear: !!e.clearT, turned: !!e.turned, bad: e.notes.filter(n => n.ok === false).map(n => n.txt) };
+  // give-way: act to starboard with the signal; once she has crossed ahead to your port side, come back to your old course (a port turn) without a signal
+  e = run(() => { spawnAI('xstbd'); return P.ais[0]; }, (e, a) => { if (e.announced && !e.bot) { e.bot = 1; P.own.th = norm(e.h0 + 50); P.horn.push({ t: P.time, p: 'S' }); }
+    if (e.clearT && !e.turned && norm(brg(P.own, a) - P.own.h) < -20) { e.turned = 1; P.own.th = e.h0; } });
+  out.give = { turned: !!e.turned, bad: e.notes.filter(n => n.ok === false).map(n => n.txt), pts: e.pts };
+  P = null; show('home'); return out;
+});
+ok(clr.stand.clear && clr.stand.turned && !clr.stand.bad.length && clr.give.turned && !clr.give.bad.length,
+  `passing clear (${JSON.stringify({c: clr.stand.clear, t: clr.stand.turned, gt: clr.give.turned})}): stand-on turning for a waypoint after she gave way ${clr.stand.bad.length ? 'PENALISED ' + clr.stand.bad.join('; ') : 'not penalised'}; give-way coming back to course once she'd crossed ${clr.give.bad.length ? 'PENALISED ' + clr.give.bad.join('; ') : 'not penalised'} (${clr.give.pts})`);
+
 ok(errors.length === 0, `no page errors ${errors.join(' | ')}`);
 await browser.close();
 if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
