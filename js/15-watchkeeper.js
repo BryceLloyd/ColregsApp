@@ -170,12 +170,14 @@ function encTick(a,c){
   if(!e){ // you dropped back from her earlier and are now closing in again: that's a new encounter
     if(c.tcpa>0&&c.cpa<0.5&&c.range<3.2&&!a.dead&&P.encs.findLast(x=>x.id===a.id).droppedBack){newEnc(a);e=P.encs[P.encs.length-1];}
     else{if(c.tcpa>0&&c.cpa<0.25&&c.range<2&&!(a.hitT!=null&&P.time-a.hitT<15)){a.warnUntil=P.time+3;if(a.warnT==null||P.time-a.warnT>20){a.warnT=P.time;wkToast(`⚠ Watch ${a.name}: you're closing on her again`,'bad');}}return;}}
-  const before=c.tcpa>0;
+  const before=c.tcpa>0&&e.cpaT===null; // once past CPA, turning back towards her doesn't reopen it
+  if(e.announced&&!e.clearT&&before&&c.cpa>=0.5&&(e.cl.role==='stand'||e.act))e.clearT=P.time; // she's passing clear (and you've acted, if it was yours to do)
+  const judge=before&&!e.clearT; // from then on, a course change (say, for the next waypoint) isn't judged against her
   if(!e.announced&&before&&(c.cpa<0.5||e.cl.type.startsWith('chan'))&&c.range<3.2){ // channel traffic always matters, even passing 0.5 nm off
     e.announced=true;if(P.m.night)e.lights=lightsWords(a,o);if(P.m.fog)e.spd0=o.v;P.sel=a.id;}
   e.minR=Math.min(e.minR,c.range);
   const dho=norm(o.th-e.h0); // ordered course change since the encounter began
-  if(before){
+  if(judge){
     if(!e.dir&&Math.abs(dho)>=10){e.dir=Math.sign(dho);e.dirT=P.time;e.dirRb=norm(brg(o,a)-o.h);
 }
     if(o.tv<0&&e.asternT===null)e.asternT=P.time;
@@ -192,7 +194,7 @@ function encTick(a,c){
       if(g)e.excused=g.name;else e.standBreak=true;}
   }
   if(P.m.fog)e.minV=Math.min(e.minV??99,o.tv); // ordered speed: actions count from the moment they're ordered
-  if(!before&&e.cpaT===null){e.cpaT=P.time;if(P.m.chan)e.cpaOff=chanPos(P.m.chan,o).off;}
+  if(c.tcpa<=0&&e.cpaT===null){e.cpaT=P.time;if(P.m.chan)e.cpaOff=chanPos(P.m.chan,o).off;}
   const asp=norm(brg(a,o)-a.h);
   if(e.cl.type==='xstbd'&&!e.crossed&&Math.sign(asp)!==Math.sign(e.asp)&&Math.abs(asp)<40&&c.range<1.5)e.crossed=true;
   e.asp=asp;
